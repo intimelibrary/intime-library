@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>인타임 도서관</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f7f6f2;
+      --surface: #ffffff;
+      --text: #1a1a1a;
+      --text-muted: #888;
+      --text-light: #aaa;
+      --border: #d8d6d0;
+      --border-light: #e8e6e0;
+      --accent: #1a1a1a;
+      --hover: #f0ede6;
+      --font-body: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+      --font-mono: 'IBM Plex Mono', 'Menlo', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    #header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    #header-inner {
+      display: flex;
+      align-items: baseline;
+      gap: 24px;
+      padding: 20px 32px 16px;
+      flex-wrap: wrap;
+    }
+
+    #site-title {
+      font-size: 17px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+    }
+
+    #site-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    #header-spacer { flex: 1; }
+
+    #count-display {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      padding-top: 2px;
+    }
+
+    /* ── SEARCH & FILTER BAR ── */
+    #filter-bar {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 32px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    #search-input {
+      flex: 0 0 260px;
+      height: 32px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      border-radius: 0;
+      transition: border-color 0.15s;
+    }
+
+    #search-input:focus { border-color: var(--accent); }
+    #search-input::placeholder { color: var(--text-light); }
+
+    .filter-select {
+      height: 32px;
+      padding: 0 28px 0 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--text);
+      cursor: pointer;
+      outline: none;
+      border-radius: 0;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23aaa'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      transition: border-color 0.15s;
+      max-width: 150px;
+    }
+
+    .filter-select:focus { border-color: var(--accent); }
+
+    #filter-reset {
+      height: 32px;
+      padding: 0 14px;
+      border: 1px solid var(--border);
+      background: transparent;
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-left: auto;
+    }
+
+    #filter-reset:hover { border-color: var(--accent); color: var(--text); }
+
+    /* ── COLUMN HEADERS ── */
+    #col-headers {
+      display: grid;
+      grid-template-columns: var(--grid-cols);
+      padding: 8px 32px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      position: sticky;
+      top: var(--header-height, 113px);
+      z-index: 90;
+    }
+
+    .col-header {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.1s;
+    }
+
+    .col-header:hover { color: var(--text); }
+    .col-header.sorted { color: var(--text); }
+    .col-header.sorted::after { content: ' ↑'; }
+    .col-header.sorted.desc::after { content: ' ↓'; }
+
+    /* ── BOOK LIST ── */
+    #book-list { padding: 0 32px; }
+
+    .book-row {
+      border-bottom: 1px solid var(--border-light);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .book-row:hover { background: var(--hover); margin: 0 -32px; padding: 0 32px; }
+
+    .book-row-main {
+      display: grid;
+      grid-template-columns: var(--grid-cols);
+      padding: 11px 0;
+      align-items: baseline;
+      gap: 0;
+    }
+
+    .book-row:hover .book-row-main { }
+
+    .cell {
+      font-size: 13px;
+      padding-right: 20px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cell-year {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .cell-title { font-weight: 400; }
+
+    .cell-author, .cell-designer, .cell-publisher {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .cell-type {
+      font-size: 11px;
+      color: var(--text-light);
+      font-family: var(--font-mono);
+    }
+
+    /* ── EXPANDED DETAIL ── */
+    .book-detail {
+      display: none;
+      padding: 0 0 20px 0;
+      border-top: 1px solid var(--border-light);
+      margin-top: -1px;
+    }
+
+    .book-row.expanded .book-detail { display: block; }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 0;
+      padding: 16px 0 0;
+    }
+
+    .detail-item {
+      padding: 8px 16px 8px 0;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .detail-label {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-light);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .detail-value {
+      font-size: 13px;
+      color: var(--text);
+      font-family: var(--font-body);
+    }
+
+    .detail-value.mono {
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .detail-value.empty { color: var(--text-light); }
+
+    /* ── LOADING / EMPTY STATES ── */
+    #state-overlay {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 32px;
+      gap: 12px;
+    }
+
+    #state-overlay p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── SETUP NOTICE ── */
+    #setup-notice {
+      margin: 32px;
+      padding: 24px 28px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    #setup-notice h3 {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    #setup-notice code {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: var(--bg);
+      padding: 2px 6px;
+    }
+
+    #setup-notice ol { padding-left: 20px; }
+    #setup-notice li { margin-bottom: 6px; }
+
+    /* ── PAGINATION ── */
+    #pagination {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 24px 32px;
+      border-top: 1px solid var(--border);
+    }
+
+    .page-btn {
+      height: 28px;
+      min-width: 28px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+
+    .page-btn:hover { border-color: var(--accent); color: var(--text); }
+    .page-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .page-btn:disabled { opacity: 0.3; cursor: default; }
+
+    #page-info {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+
+    /* ── FOOTER ── */
+    #footer {
+      border-top: 1px solid var(--border);
+      padding: 20px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #footer p {
+      font-size: 11px;
+      color: var(--text-light);
+      letter-spacing: 0.03em;
+    }
+
+    /* ── TAG BAR ── */
+    #tag-bar {
+      display: none;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px 32px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    #tag-bar.visible { display: flex; }
+
+    .tag-bar-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-right: 2px;
+    }
+
+    .tag-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 22px;
+      padding: 0 7px 0 9px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      font-family: var(--font-body);
+      white-space: nowrap;
+    }
+
+    .tag-chip-label { opacity: 0.65; font-size: 9px; letter-spacing: .04em; text-transform: uppercase; }
+    .tag-chip-val { font-weight: 400; }
+
+    .tag-chip-x {
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      opacity: 0.55;
+      margin-left: 2px;
+      transition: opacity 0.1s;
+    }
+    .tag-chip-x:hover { opacity: 1; }
+
+    /* ── CLICKABLE CELL VALUES ── */
+    .cell-tag {
+      cursor: pointer;
+    }
+    .cell-tag:hover {
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 2px;
+    }
+    .cell-tag[data-val=""] { cursor: default; text-decoration: none; }
+
+    /* ── HOVER CARD ── */
+    #hover-card {
+      position: fixed;
+      z-index: 300;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: 0 6px 24px rgba(0,0,0,0.10);
+      padding: 14px 16px;
+      min-width: 240px;
+      max-width: 320px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.12s;
+    }
+    #hover-card.visible { opacity: 1; }
+
+    .hc-title {
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.4;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .hc-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 16px;
+      padding: 2px 0;
+    }
+
+    .hc-key {
+      font-size: 9px;
+      font-weight: 500;
+      color: var(--text-light);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .hc-val {
+      font-size: 11px;
+      color: var(--text);
+      text-align: right;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 190px;
+    }
+
+    .hc-val.mono { font-family: var(--font-mono); font-size: 10px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      #header-inner, #filter-bar, #tag-bar, #book-list, #col-headers, #pagination, #footer, #setup-notice {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+      .book-row:hover { margin: 0 -20px; padding: 0 20px; }
+      #search-input { flex: 0 0 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header id="header">
+  <div id="header-inner">
+    <span id="site-title">인타임 도서관</span>
+    <span id="site-subtitle">In-Time Library · 2012–2026</span>
+    <div id="header-spacer"></div>
+    <span id="count-display">—</span>
+  </div>
+  <!-- ── FILTER BAR ── -->
+  <div id="filter-bar">
+    <input type="search" id="search-input" placeholder="제목, 저자, 디자이너, 발행처 검색…">
+    <select class="filter-select" id="filter-year" title="연도">
+      <option value="">연도 전체</option>
+    </select>
+    <select class="filter-select" id="filter-type" title="유형">
+      <option value="">유형 전체</option>
+    </select>
+    <select class="filter-select" id="filter-field" title="분야">
+      <option value="">분야 전체</option>
+    </select>
+    <select class="filter-select" id="filter-lang" title="언어">
+      <option value="">언어 전체</option>
+    </select>
+    <select class="filter-select" id="filter-binding" title="제본">
+      <option value="">제본 전체</option>
+    </select>
+    <select class="filter-select" id="filter-designer" title="디자이너">
+      <option value="">디자이너 전체</option>
+    </select>
+    <button id="filter-reset">초기화</button>
+  </div>
+  <!-- ── TAG BAR ── -->
+  <div id="tag-bar"></div>
+</header>
+
+<!-- ── HOVER CARD ── -->
+<div id="hover-card"></div>
+
+<!-- ── COLUMN HEADERS ── -->
+<div id="col-headers">
+  <span class="col-header" data-col="year">연도</span>
+  <span class="col-header" data-col="title">제목</span>
+  <span class="col-header" data-col="type">유형</span>
+  <span class="col-header" data-col="author">저자/작가</span>
+  <span class="col-header" data-col="designer">디자이너</span>
+  <span class="col-header" data-col="publisher">발행처</span>
+</div>
+
+<!-- ── MAIN CONTENT ── -->
+<main>
+  <div id="state-overlay">
+    <div class="spinner"></div>
+    <p>데이터를 불러오는 중입니다…</p>
+  </div>
+  <div id="book-list"></div>
+  <div id="pagination"></div>
+</main>
+
+<footer id="footer">
+  <p>인타임 도서관 · In-Time Library · 서울문화재단 지원</p>
+  <p id="footer-count"></p>
+</footer>
+
+<script>
+// ──────────────────────────────────────────────────────────
+// CONFIG — Google Sheets 설정
+// ──────────────────────────────────────────────────────────
+const CONFIG = {
+  // gviz 엔드포인트: "링크가 있는 모든 사용자" 설정만으로 브라우저에서 직접 접근 가능
+  SHEET_URL: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTSw1uJSia6-gIKDYk_eU5LELanZ9bJC0xWR-XwVYM_ALECuoJS7OgjEwV4PCw6W-QIBOC38t2TCheh/pub?output=csv',
+
+  // 스프레드시트 열 이름 (첫 행 헤더와 정확히 일치)
+  COL: {
+    collection:   '소장',
+    year:         '연도',
+    title:        '제목',
+    type:         '유형',
+    field:        '분야',
+    format:       '판형',
+    pages:        '면수',
+    copies:       '부수',
+    language:     '언어',
+    paper:        '종이',
+    printing:     '인쇄 및 후가공',
+    binding:      '제본',
+    isbn:         'ISBN/ISSN',
+    author:       '저자/작가',
+    editor:       '기획자/편집자',
+    photographer: '사진가/일러스트레이터',
+    designer:     '디자이너',
+    publisher:    '발행처',
+    publishDate:  '발행일',
+    sponsor:      '후원',
+  },
+
+  PAGE_SIZE: 60,   // 한 페이지당 표시 권 수
+};
+
+// 열 너비 (CSS grid-template-columns)
+document.documentElement.style.setProperty(
+  '--grid-cols', '64px 1fr 90px 140px 140px 140px'
+);
+
+// ──────────────────────────────────────────────────────────
+// STATE
+// ──────────────────────────────────────────────────────────
+let allBooks = [];
+let filtered = [];
+let currentPage = 1;
+let sortCol = 'year';
+let sortAsc = true;
+let expandedId = null;
+let activeTags = {};        // { fieldKey: value } — 클릭 태그 필터
+let hoverTimer = null;      // 호버카드 딜레이 타이머
+
+// ──────────────────────────────────────────────────────────
+// LOAD DATA  (우선순위: 로컬 data.csv → Google Sheets → 안내)
+// ──────────────────────────────────────────────────────────
+async function loadData() {
+  // 1순위: 같은 폴더의 data.csv (로컬 서버 운영 시 가장 안정적)
+  try {
+    const res = await fetch('./data.csv');
+    if (res.ok) {
+      const text = await res.text();
+      parseCSVText(text, '로컬 data.csv');
+      return;
+    }
+  } catch (_) {}
+
+  // 2순위: Google Sheets gviz 엔드포인트
+  if (CONFIG.SHEET_URL) {
+    Papa.parse(CONFIG.SHEET_URL, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete(results) {
+        if (!results.data || results.data.length === 0) {
+          showConnectionError(); return;
+        }
+        allBooks = results.data.map((row, i) => ({ _id: i, ...row }));
+        init();
+      },
+      error() { showConnectionError(); }
+    });
+    return;
+  }
+
+  showConnectionError();
+}
+
+function parseCSVText(text, source) {
+  const results = Papa.parse(text, { header: true, skipEmptyLines: true });
+  allBooks = results.data.map((row, i) => ({ _id: i, ...row }));
+  init();
+  // 데이터 출처 표시
+  const src = document.createElement('div');
+  src.style.cssText = 'font-size:10px;color:#aaa;padding:4px 32px 0;letter-spacing:.04em;';
+  src.textContent = '데이터: ' + source;
+  document.getElementById('header').after(src);
+}
+
+function showConnectionError() {
+  document.getElementById('state-overlay')?.remove();
+
+  const notice = document.createElement('div');
+  notice.id = 'setup-notice';
+  notice.innerHTML = `
+    <h3>데이터를 불러올 수 없습니다</h3>
+    <p>아래 방법 중 하나로 실행하세요.</p><br>
+    <ol>
+      <li>
+        <strong>방법 A — 로컬 서버 실행</strong> (전시 운영용, 권장)<br>
+        Google Sheets에서 <strong>파일 → 다운로드 → CSV</strong>로 저장 →
+        파일명을 <code>data.csv</code>로 변경 → <code>index.html</code>과 같은 폴더에 넣기<br>
+        터미널에서 해당 폴더로 이동 후:<br>
+        <code>python -m http.server 8080</code><br>
+        브라우저에서 <code>http://localhost:8080</code> 접속
+      </li>
+      <li style="margin-top:12px">
+        <strong>방법 B — 구글 시트 "웹에 게시"</strong> (인터넷 연결 시)<br>
+        Google Sheets → <strong>파일 → 공유 → 웹에 게시</strong> →
+        형식: <strong>쉼표로 구분된 값(.csv)</strong> → 게시<br>
+        생성된 URL로 <code>index.html</code> 상단의 <code>SHEET_URL</code> 값 교체
+      </li>
+    </ol>
+  `;
+  document.querySelector('main').prepend(notice);
+
+  // 샘플 데이터로 레이아웃 미리보기
+  allBooks = SAMPLE_DATA.map((row, i) => ({ _id: i, ...row }));
+  init();
+}
+
+// ──────────────────────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────────────────────
+function init() {
+  buildFilterOptions();
+  bindEvents();
+  applyFilters();
+  document.getElementById('state-overlay')?.remove();
+
+  // sticky col-headers 위치 = 헤더 높이
+  const updateStickyTop = () => {
+    document.getElementById('col-headers').style.top =
+      document.getElementById('header').offsetHeight + 'px';
+  };
+  updateStickyTop();
+
+  // 스크롤 시 호버카드 숨김
+  window.addEventListener('scroll', hideHoverCard, { passive: true });
+}
+
+// ──────────────────────────────────────────────────────────
+// FILTER OPTIONS (드롭다운 항목 자동 생성)
+// ──────────────────────────────────────────────────────────
+function buildFilterOptions() {
+  const C = CONFIG.COL;
+
+  // 단일값 필터 드롭다운
+  function populate(selectId, colName) {
+    const sel = document.getElementById(selectId);
+    const values = [...new Set(allBooks.map(b => (b[colName] || '').trim()))]
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, 'ko'));
+    values.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      sel.appendChild(opt);
+    });
+  }
+
+  // 다중값 필터 드롭다운 — 세미콜론(;)으로 구분된 값을 각각 분리
+  function populateMulti(selectId, colName) {
+    const sel = document.getElementById(selectId);
+    const allVals = allBooks.flatMap(b =>
+      (b[colName] || '').split(';').map(s => s.trim()).filter(Boolean)
+    );
+    const values = [...new Set(allVals)].sort((a, b) => a.localeCompare(b, 'ko'));
+    values.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      sel.appendChild(opt);
+    });
+  }
+
+  // 연도는 역순 정렬
+  const yearSel = document.getElementById('filter-year');
+  const years = [...new Set(allBooks.map(b => (b[C.year] || '').trim()))]
+    .filter(Boolean)
+    .sort((a, b) => b - a);
+  years.forEach(y => {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y;
+    yearSel.appendChild(opt);
+  });
+
+  populate('filter-type',      C.type);
+  populate('filter-field',     C.field);
+  populateMulti('filter-lang',     C.language);   // 예: "한국어; 영어" 분리
+  populateMulti('filter-binding',  C.binding);    // 예: "무선제본; 간지" 분리
+  populate('filter-designer',  C.designer);
+}
+
+// ──────────────────────────────────────────────────────────
+// EVENTS
+// ──────────────────────────────────────────────────────────
+function bindEvents() {
+  document.getElementById('search-input').addEventListener('input', debounce(() => {
+    currentPage = 1;
+    applyFilters();
+  }, 200));
+
+  ['filter-year','filter-type','filter-field','filter-lang','filter-binding','filter-designer'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => {
+      currentPage = 1;
+      applyFilters();
+    });
+  });
+
+  document.getElementById('filter-reset').addEventListener('click', resetFilters);
+
+  document.querySelectorAll('.col-header').forEach(el => {
+    el.addEventListener('click', () => {
+      const col = el.dataset.col;
+      if (sortCol === col) sortAsc = !sortAsc;
+      else { sortCol = col; sortAsc = true; }
+      document.querySelectorAll('.col-header').forEach(h => h.classList.remove('sorted','desc'));
+      el.classList.add('sorted');
+      if (!sortAsc) el.classList.add('desc');
+      currentPage = 1;
+      applyFilters();
+    });
+  });
+
+  // 이벤트 위임 — 태그 클릭 + 행 펼치기 + 호버카드
+  const list = document.getElementById('book-list');
+
+  list.addEventListener('click', e => {
+    // 태그 클릭 (셀 값) — 전파 차단해서 행 펼침 방지
+    const tagEl = e.target.closest('.cell-tag');
+    if (tagEl && tagEl.dataset.val) {
+      e.stopPropagation();
+      addTag(tagEl.dataset.field, tagEl.dataset.val);
+      return;
+    }
+    // 상세 패널 내 태그 클릭
+    const detailTag = e.target.closest('.detail-tag');
+    if (detailTag && detailTag.dataset.val) {
+      e.stopPropagation();
+      addTag(detailTag.dataset.field, detailTag.dataset.val);
+      return;
+    }
+    // 행 클릭 → 펼치기/닫기
+    const row = e.target.closest('.book-row');
+    if (row) {
+      const id = Number(row.dataset.id);
+      hideHoverCard();
+      expandedId = expandedId === id ? null : id;
+      document.querySelectorAll('.book-row.expanded').forEach(r => r.classList.remove('expanded'));
+      if (expandedId !== null) row.classList.add('expanded');
+    }
+  });
+
+  // mouseover/mouseout은 버블링이 되므로 이벤트 위임에 적합
+  list.addEventListener('mouseover', e => {
+    const row = e.target.closest('.book-row');
+    if (row) scheduleHoverCard(row, e);
+  });
+
+  list.addEventListener('mouseout', e => {
+    const row = e.target.closest('.book-row');
+    // 행 안에서 자식 요소 간 이동 시에는 취소하지 않음
+    if (row && !row.contains(e.relatedTarget)) cancelHoverCard();
+  });
+
+  list.addEventListener('mousemove', e => {
+    const card = document.getElementById('hover-card');
+    if (card.classList.contains('visible')) positionHoverCard(e);
+  });
+}
+
+function resetFilters() {
+  document.getElementById('search-input').value = '';
+  ['filter-year','filter-type','filter-field','filter-lang','filter-binding','filter-designer'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  activeTags = {};
+  renderTagBar();
+  currentPage = 1;
+  applyFilters();
+}
+
+// ──────────────────────────────────────────────────────────
+// FILTER & SORT
+// ──────────────────────────────────────────────────────────
+function applyFilters() {
+  const C = CONFIG.COL;
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+  const fYear     = document.getElementById('filter-year').value;
+  const fType     = document.getElementById('filter-type').value;
+  const fField    = document.getElementById('filter-field').value;
+  const fLang     = document.getElementById('filter-lang').value;
+  const fBinding  = document.getElementById('filter-binding').value;
+  const fDesigner = document.getElementById('filter-designer').value;
+
+  filtered = allBooks.filter(b => {
+    if (fYear     && (b[C.year]  || '').trim() !== fYear)  return false;
+    if (fType     && (b[C.type]  || '').trim() !== fType)  return false;
+    if (fField    && (b[C.field] || '').trim() !== fField) return false;
+    // 세미콜론 구분 다중값 필드는 포함 여부로 비교
+    if (fLang    && !(b[C.language] || '').split(';').map(s => s.trim()).includes(fLang))    return false;
+    if (fBinding && !(b[C.binding]  || '').split(';').map(s => s.trim()).includes(fBinding)) return false;
+    if (fDesigner && (b[C.designer] || '').trim() !== fDesigner) return false;
+
+    if (q) {
+      const searchable = [
+        b[C.title], b[C.author], b[C.editor], b[C.designer],
+        b[C.publisher], b[C.isbn], b[C.photographer], b[C.sponsor]
+      ].map(v => (v || '').toLowerCase()).join(' ');
+      if (!searchable.includes(q)) return false;
+    }
+
+    // 클릭 태그 필터 — 각 태그에 대해 세미콜론 분리 후 포함 여부 확인
+    for (const [fieldKey, tagVal] of Object.entries(activeTags)) {
+      const colName = CONFIG.COL[fieldKey];
+      if (!colName) continue;
+      const parts = (b[colName] || '').split(';').map(s => s.trim());
+      if (!parts.includes(tagVal)) return false;
+    }
+
+    return true;
+  });
+
+  // Sort
+  const colMap = {
+    year:      C.year,
+    title:     C.title,
+    type:      C.type,
+    author:    C.author,
+    designer:  C.designer,
+    publisher: C.publisher,
+  };
+  const sortKey = colMap[sortCol] || C.year;
+  filtered.sort((a, b) => {
+    const av = (a[sortKey] || '').toString();
+    const bv = (b[sortKey] || '').toString();
+    return sortAsc ? av.localeCompare(bv, 'ko') : bv.localeCompare(av, 'ko');
+  });
+
+  updateCount();
+  renderPage();
+  renderPagination();
+}
+
+// ──────────────────────────────────────────────────────────
+// RENDER
+// ──────────────────────────────────────────────────────────
+function renderPage() {
+  const C = CONFIG.COL;
+  const start = (currentPage - 1) * CONFIG.PAGE_SIZE;
+  const pageBooks = filtered.slice(start, start + CONFIG.PAGE_SIZE);
+
+  const list = document.getElementById('book-list');
+  list.innerHTML = '';
+
+  if (pageBooks.length === 0) {
+    list.innerHTML = `<div id="state-overlay"><p>검색 결과가 없습니다.</p></div>`;
+    return;
+  }
+
+  pageBooks.forEach(book => {
+    const row = document.createElement('div');
+    row.className = 'book-row' + (expandedId === book._id ? ' expanded' : '');
+    row.dataset.id = book._id;
+
+    const v = (col) => (book[C[col]] || '').trim();
+    const esc = (s) => (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // 태그 가능한 셀 — data-field, data-val 포함, 빈 값이면 커서 기본으로
+    const tagCell = (cls, field, val) =>
+      `<span class="cell ${cls} cell-tag" data-field="${field}" data-val="${esc(val)}">${esc(val)}</span>`;
+
+    row.innerHTML = `
+      <div class="book-row-main">
+        ${tagCell('cell-year',      'year',      v('year'))}
+        <span class="cell cell-title">${esc(v('title'))}</span>
+        ${tagCell('cell-type',      'type',      v('type'))}
+        ${tagCell('cell-author',    'author',    v('author'))}
+        ${tagCell('cell-designer',  'designer',  v('designer'))}
+        ${tagCell('cell-publisher', 'publisher', v('publisher'))}
+      </div>
+      <div class="book-detail">
+        <div class="detail-grid">
+          ${detailItem('분야',                 v('field'),        false, 'field')}
+          ${detailItem('판형',                 v('format'))}
+          ${detailItem('면수',                 v('pages'),        true)}
+          ${detailItem('부수',                 v('copies'),       true)}
+          ${detailItem('언어',                 v('language'),     false, 'language')}
+          ${detailItem('종이',                 v('paper'),        false, 'paper')}
+          ${detailItem('인쇄 및 후가공',        v('printing'))}
+          ${detailItem('제본',                 v('binding'),      false, 'binding')}
+          ${detailItem('ISBN/ISSN',            v('isbn'),         true)}
+          ${detailItem('기획자/편집자',          v('editor'),      false, 'editor')}
+          ${detailItem('사진가/일러스트레이터',   v('photographer'), false, 'photographer')}
+          ${detailItem('발행처',               v('publisher'),    false, 'publisher')}
+          ${detailItem('발행일',               v('publishDate'),  true)}
+          ${detailItem('후원',                 v('sponsor'),      false, 'sponsor')}
+          ${detailItem('소장',                 v('collection'))}
+        </div>
+      </div>
+    `;
+
+    list.appendChild(row);
+  });
+}
+
+function detailItem(label, value, mono = false, fieldKey = '') {
+  const isEmpty = !value;
+  const cls = mono ? 'detail-value mono' : 'detail-value';
+  const esc = (s) => (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  let inner;
+  if (isEmpty) {
+    inner = '—';
+  } else if (fieldKey) {
+    inner = `<span class="detail-tag" data-field="${fieldKey}" data-val="${esc(value)}" style="cursor:pointer;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px;">${esc(value)}</span>`;
+  } else {
+    inner = esc(value);
+  }
+  return `
+    <div class="detail-item">
+      <div class="detail-label">${label}</div>
+      <div class="${cls}${isEmpty ? ' empty' : ''}">${inner}</div>
+    </div>
+  `;
+}
+
+// ──────────────────────────────────────────────────────────
+// TAG SYSTEM
+// ──────────────────────────────────────────────────────────
+const TAG_LABELS = {
+  year: '연도', type: '유형', field: '분야', author: '저자/작가',
+  editor: '기획자/편집자', photographer: '사진가', designer: '디자이너',
+  publisher: '발행처', language: '언어', binding: '제본',
+  paper: '종이', sponsor: '후원',
+};
+
+function addTag(fieldKey, value) {
+  if (!value) return;
+  activeTags[fieldKey] = value;
+  renderTagBar();
+  currentPage = 1;
+  applyFilters();
+}
+
+function removeTag(fieldKey) {
+  delete activeTags[fieldKey];
+  renderTagBar();
+  currentPage = 1;
+  applyFilters();
+}
+
+function renderTagBar() {
+  const bar = document.getElementById('tag-bar');
+  const entries = Object.entries(activeTags);
+  bar.innerHTML = '';
+  if (entries.length === 0) {
+    bar.classList.remove('visible');
+    return;
+  }
+  bar.classList.add('visible');
+  const lbl = document.createElement('span');
+  lbl.className = 'tag-bar-label';
+  lbl.textContent = '태그:';
+  bar.appendChild(lbl);
+  entries.forEach(([fieldKey, val]) => {
+    const chip = document.createElement('span');
+    chip.className = 'tag-chip';
+    chip.innerHTML = `<span class="tag-chip-label">${TAG_LABELS[fieldKey] || fieldKey}</span><span class="tag-chip-val">${val}</span><span class="tag-chip-x" data-field="${fieldKey}">×</span>`;
+    chip.querySelector('.tag-chip-x').addEventListener('click', () => removeTag(fieldKey));
+    bar.appendChild(chip);
+  });
+  // sticky top 재조정
+  const headerH = document.getElementById('header').offsetHeight;
+  document.getElementById('col-headers').style.top = headerH + 'px';
+}
+
+// ──────────────────────────────────────────────────────────
+// HOVER CARD
+// ──────────────────────────────────────────────────────────
+function scheduleHoverCard(row, e) {
+  cancelHoverCard();
+  hoverTimer = setTimeout(() => showHoverCard(row, e), 280);
+}
+
+function cancelHoverCard() {
+  clearTimeout(hoverTimer);
+  hoverTimer = null;
+  hideHoverCard();
+}
+
+function hideHoverCard() {
+  const card = document.getElementById('hover-card');
+  card.classList.remove('visible');
+}
+
+function showHoverCard(row, e) {
+  if (row.classList.contains('expanded')) return;
+  const id = Number(row.dataset.id);
+  const book = allBooks.find(b => b._id === id);
+  if (!book) return;
+  const C = CONFIG.COL;
+  const v = (col) => (book[C[col]] || '').trim();
+  const esc = (s) => (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  const rows = [
+    ['유형',       v('type')],
+    ['분야',       v('field')],
+    ['판형',       v('format')],
+    ['면수',       v('pages')],
+    ['종이',       v('paper')],
+    ['제본',       v('binding')],
+    ['인쇄',       v('printing')],
+    ['디자이너',   v('designer')],
+    ['발행처',     v('publisher')],
+    ['발행일',     v('publishDate')],
+  ].filter(([, val]) => val);
+
+  const card = document.getElementById('hover-card');
+  card.innerHTML = `
+    <div class="hc-title">${esc(v('title'))}</div>
+    ${rows.map(([k, val]) => `
+      <div class="hc-row">
+        <span class="hc-key">${k}</span>
+        <span class="hc-val">${esc(val)}</span>
+      </div>`).join('')}
+    <div style="margin-top:8px;font-size:9px;color:var(--text-light);letter-spacing:.04em;">클릭하면 전체 항목 보기</div>
+  `;
+  positionHoverCard(e);
+  card.classList.add('visible');
+}
+
+function positionHoverCard(e) {
+  const card = document.getElementById('hover-card');
+  const margin = 16;
+  const cw = card.offsetWidth || 280;
+  const ch = card.offsetHeight || 200;
+  let x = e.clientX + 18;
+  let y = e.clientY + 10;
+  if (x + cw > window.innerWidth - margin) x = e.clientX - cw - 10;
+  if (y + ch > window.innerHeight - margin) y = window.innerHeight - ch - margin;
+  card.style.left = x + 'px';
+  card.style.top  = y + 'px';
+}
+
+function updateCount() {
+  const total = allBooks.length;
+  const shown = filtered.length;
+  const isFiltered = shown !== total;
+  document.getElementById('count-display').textContent =
+    isFiltered ? `${shown.toLocaleString()} / ${total.toLocaleString()}권` : `${total.toLocaleString()}권`;
+  document.getElementById('footer-count').textContent =
+    `총 ${total.toLocaleString()}종`;
+}
+
+// ──────────────────────────────────────────────────────────
+// PAGINATION
+// ──────────────────────────────────────────────────────────
+function renderPagination() {
+  const totalPages = Math.ceil(filtered.length / CONFIG.PAGE_SIZE);
+  const pg = document.getElementById('pagination');
+  pg.innerHTML = '';
+
+  if (totalPages <= 1) return;
+
+  const prev = document.createElement('button');
+  prev.className = 'page-btn';
+  prev.textContent = '←';
+  prev.disabled = currentPage === 1;
+  prev.onclick = () => goToPage(currentPage - 1);
+  pg.appendChild(prev);
+
+  // 최대 7개 페이지 버튼
+  const range = pageRange(currentPage, totalPages);
+  let prevNum = null;
+  range.forEach(p => {
+    if (prevNum !== null && p - prevNum > 1) {
+      const ellipsis = document.createElement('span');
+      ellipsis.textContent = '…';
+      ellipsis.style.cssText = 'font-size:12px;color:#aaa;padding:0 4px;';
+      pg.appendChild(ellipsis);
+    }
+    const btn = document.createElement('button');
+    btn.className = 'page-btn' + (p === currentPage ? ' active' : '');
+    btn.textContent = p;
+    btn.onclick = () => goToPage(p);
+    pg.appendChild(btn);
+    prevNum = p;
+  });
+
+  const next = document.createElement('button');
+  next.className = 'page-btn';
+  next.textContent = '→';
+  next.disabled = currentPage === totalPages;
+  next.onclick = () => goToPage(currentPage + 1);
+  pg.appendChild(next);
+
+  const info = document.createElement('span');
+  info.id = 'page-info';
+  info.textContent = `${currentPage} / ${totalPages}`;
+  pg.appendChild(info);
+}
+
+function pageRange(current, total) {
+  const delta = 2;
+  const range = [];
+  for (let i = Math.max(1, current - delta); i <= Math.min(total, current + delta); i++) range.push(i);
+  if (range[0] > 1) range.unshift(1);
+  if (range[range.length - 1] < total) range.push(total);
+  return range;
+}
+
+function goToPage(p) {
+  currentPage = p;
+  expandedId = null;
+  renderPage();
+  renderPagination();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ──────────────────────────────────────────────────────────
+// UTILS
+// ──────────────────────────────────────────────────────────
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+// ──────────────────────────────────────────────────────────
+// SAMPLE DATA (SHEET_URL 없을 때 미리보기용)
+// ──────────────────────────────────────────────────────────
+// 실제 시트 구조와 동일한 컬럼명 사용 (SHEET_URL 로드 실패 시 표시)
+const SAMPLE_DATA = [
+  { '소장':'','연도':'2024','제목':'상자 이야기','유형':'','분야':'','판형':'80x120','면수':'36','부수':'300','언어':'한국어; 영어','종이':'랑데뷰; 매직칼라','인쇄 및 후가공':'오프셋 인쇄 및 형압; 박','제본':'무선제본','ISBN/ISSN':'979-11-981040-5-2','저자/작가':'신승민; 나하늘','기획자/편집자':'신승민','사진가/일러스트레이터':'나하늘','디자이너':'나하늘','발행처':'글라프레스','발행일':'2024.08.31.','후원':'' },
+  { '소장':'','연도':'2025','제목':'풋노트 Vol. 1','유형':'','분야':'','판형':'275x405','면수':'24','부수':'200','언어':'한국어; 영어','종이':'경량인쇄지','인쇄 및 후가공':'오프셋 인쇄','제본':'신문 접지','ISBN/ISSN':'979-11-983514-3-2','저자/작가':'','기획자/편집자':'두 낫 프레스? 프레스!','사진가/일러스트레이터':'','디자이너':'스튜디오 유연한','발행처':'두 낫 프레스? 프레스!','발행일':'2025.11.14.','후원':'' },
+  { '소장':'','연도':'2025','제목':'hoohoo (후후)','유형':'','분야':'','판형':'174x236','면수':'56','부수':'','언어':'한국어; 영어','종이':'고궁개량한지','인쇄 및 후가공':'오프셋 인쇄','제본':'무선제본; 간지','ISBN/ISSN':'979-11-992083-1-5','저자/작가':'MasaJinyoung','기획자/편집자':'','사진가/일러스트레이터':'MasaJinyoung','디자이너':'','발행처':'마사진 (MASAJINE)','발행일':'','후원':'' },
+  { '소장':'','연도':'2017','제목':'탈','유형':'','분야':'','판형':'124x188','면수':'272','부수':'500','언어':'한국어','종이':'골든캐스크슈퍼아트; 스펙트라; 아트지','인쇄 및 후가공':'오프셋 인쇄; 표지에 라미네이팅','제본':'PUR 제본','ISBN/ISSN':'979-11-953124-8-1','저자/작가':'전경욱','기획자/편집자':'장인기','사진가/일러스트레이터':'구본창; 서헌강','디자이너':'신건모','발행처':'온양민속박물관','발행일':'2017.12.06.','후원':'' },
+  { '소장':'','연도':'2023','제목':'현대 한국 그래픽 디자인','유형':'도록','분야':'디자인','판형':'210x297','면수':'240','부수':'1000','언어':'한국어; 영어','종이':'아트지 130g','인쇄 및 후가공':'4도 오프셋','제본':'반양장','ISBN/ISSN':'979-11-XXXXXX-X','저자/작가':'여러 저자','기획자/편집자':'이지원','사진가/일러스트레이터':'','디자이너':'뉴웨이브','발행처':'국립현대미술관','발행일':'2023.05.20.','후원':'문화체육관광부' },
+  { '소장':'','연도':'2022','제목':'밤의 식물도감','유형':'단행본','분야':'문학','판형':'신국판','면수':'224','부수':'800','언어':'한국어','종이':'미색모조 75g','인쇄 및 후가공':'단색(흑백); 별색 1도','제본':'무선제본','ISBN/ISSN':'979-11-XXXXXX-X','저자/작가':'한강','기획자/편집자':'오세인','사진가/일러스트레이터':'','디자이너':'박민준','발행처':'창비','발행일':'2022.11.15.','후원':'' },
+];
+
+// ──────────────────────────────────────────────────────────
+// START
+// ──────────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
