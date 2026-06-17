@@ -406,15 +406,27 @@
     .tag-chip-x:hover { opacity: 1; }
 
     /* ── CLICKABLE CELL VALUES ── */
-    .cell-tag {
+    .cell-tag, .detail-tag {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--text);
+      border-radius: 20px;
+      padding: 1px 9px;
+      font-size: 11px;
       cursor: pointer;
+      background: transparent;
+      color: var(--text);
+      transition: background 0.12s, color 0.12s;
+      white-space: nowrap;
+      margin-right: 3px;
+      line-height: 1.6;
+      vertical-align: middle;
+      flex-shrink: 0;
     }
-    .cell-tag:hover {
-      text-decoration: underline;
-      text-decoration-thickness: 1px;
-      text-underline-offset: 2px;
+    .cell-tag:hover, .detail-tag:hover {
+      background: var(--text);
+      color: var(--bg);
     }
-    .cell-tag[data-val=""] { cursor: default; text-decoration: none; }
 
     /* ── RESPONSIVE ── */
     @media (max-width: 900px) {
@@ -856,9 +868,14 @@ function renderMore() {
 
     const v = (col) => (book[C[col]] || '').trim();
     const esc = (s) => (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    // 태그 가능한 셀 — data-field, data-val 포함, 빈 값이면 커서 기본으로
-    const tagCell = (cls, field, val) =>
-      `<span class="cell ${cls} cell-tag" data-field="${field}" data-val="${esc(val)}">${esc(val)}</span>`;
+    // 태그 가능한 셀 — ; 구분 다중값을 각각 개별 태그로 렌더링
+    const tagCell = (cls, field, val) => {
+      const parts = val ? val.split(';').map(s => s.trim()).filter(Boolean) : [];
+      const tags = parts.map(p =>
+        `<span class="cell-tag" data-field="${field}" data-val="${esc(p)}">${esc(p)}</span>`
+      ).join('');
+      return `<span class="cell ${cls}">${tags}</span>`;
+    };
 
     row.innerHTML = `
       <div class="book-row-main">
@@ -902,7 +919,10 @@ function detailItem(label, value, mono = false, fieldKey = '') {
   if (isEmpty) {
     inner = '—';
   } else if (fieldKey) {
-    inner = `<span class="detail-tag" data-field="${fieldKey}" data-val="${esc(value)}" style="cursor:pointer;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px;">${esc(value)}</span>`;
+    const parts = value.split(';').map(s => s.trim()).filter(Boolean);
+    inner = parts.map(p =>
+      `<span class="detail-tag" data-field="${fieldKey}" data-val="${esc(p)}">${esc(p)}</span>`
+    ).join('');
   } else {
     inner = esc(value);
   }
