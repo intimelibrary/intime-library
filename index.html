@@ -181,6 +181,16 @@
 
     .book-row:hover { background: var(--hover); margin: 0 -32px; padding: 0 32px; }
 
+    /* 책 하나를 펼치면 나머지 행은 흐리게 */
+    #book-list.has-expanded .book-row:not(.expanded) .book-row-main {
+      color: var(--text-light);
+      transition: color 0.18s ease;
+    }
+    #book-list.has-expanded .book-row:not(.expanded) .cell-tag {
+      border-color: var(--text-light);
+      color: var(--text-light);
+    }
+
     .book-row-main {
       display: grid;
       grid-template-columns: var(--grid-cols);
@@ -821,6 +831,8 @@ function bindEvents() {
       expandedId = expandedId === id ? null : id;
       document.querySelectorAll('.book-row.expanded').forEach(r => r.classList.remove('expanded'));
       if (expandedId !== null) row.classList.add('expanded');
+      // 펼친 책이 있으면 나머지 행을 흐리게
+      document.getElementById('book-list').classList.toggle('has-expanded', expandedId !== null);
     }
   });
 }
