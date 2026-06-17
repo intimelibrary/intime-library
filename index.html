@@ -199,15 +199,19 @@
       white-space: nowrap;
     }
 
-    /* 태그가 들어가는 셀 — 줄바꿈 허용, 클리핑 해제 */
-    /* 메인 행: 넘치는 태그는 숨김 (1~2개만 보임) */
+    /* 태그 셀: 기본은 한 줄로 쭉 나열 (짤림 없음), 호버·클릭 시 줄바꿈 */
     .cell-tags {
-      overflow: hidden;
+      overflow: visible;
       white-space: normal;
       display: flex;
       flex-wrap: nowrap;
       gap: 3px;
       align-items: center;
+    }
+
+    .book-row:hover .cell-tags,
+    .book-row.expanded .cell-tags {
+      flex-wrap: wrap;
     }
 
     .cell-year {
