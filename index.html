@@ -547,12 +547,6 @@
     <select class="filter-select" id="filter-lang" title="언어">
       <option value="">언어 전체</option>
     </select>
-    <select class="filter-select" id="filter-binding" title="제본">
-      <option value="">제본 전체</option>
-    </select>
-    <select class="filter-select" id="filter-designer" title="디자이너">
-      <option value="">디자이너 전체</option>
-    </select>
     <button id="filter-reset">초기화</button>
   </div>
   <!-- ── TAG BAR ── -->
@@ -788,8 +782,6 @@ function buildFilterOptions() {
   populate('filter-type',      C.type);
   populate('filter-field',     C.field);
   populateMulti('filter-lang',     C.language);   // 예: "한국어; 영어" 분리
-  populateMulti('filter-binding',  C.binding);    // 예: "무선제본; 간지" 분리
-  populate('filter-designer',  C.designer);
 }
 
 // ──────────────────────────────────────────────────────────
@@ -800,7 +792,7 @@ function bindEvents() {
     applyFilters();
   }, 200));
 
-  ['filter-year','filter-type','filter-field','filter-lang','filter-binding','filter-designer'].forEach(id => {
+  ['filter-year','filter-type','filter-field','filter-lang'].forEach(id => {
     document.getElementById(id).addEventListener('change', () => applyFilters());
   });
 
@@ -866,7 +858,7 @@ function scrollRowUnderHeader(row) {
 
 function resetFilters() {
   document.getElementById('search-input').value = '';
-  ['filter-year','filter-type','filter-field','filter-lang','filter-binding','filter-designer'].forEach(id => {
+  ['filter-year','filter-type','filter-field','filter-lang'].forEach(id => {
     document.getElementById(id).value = '';
   });
   activeTags = {};
@@ -884,8 +876,6 @@ function applyFilters() {
   const fType     = document.getElementById('filter-type').value;
   const fField    = document.getElementById('filter-field').value;
   const fLang     = document.getElementById('filter-lang').value;
-  const fBinding  = document.getElementById('filter-binding').value;
-  const fDesigner = document.getElementById('filter-designer').value;
 
   filtered = allBooks.filter(b => {
     if (fYear     && (b[C.year]  || '').trim() !== fYear)  return false;
@@ -893,8 +883,6 @@ function applyFilters() {
     if (fField    && (b[C.field] || '').trim() !== fField) return false;
     // 세미콜론 구분 다중값 필드는 포함 여부로 비교
     if (fLang    && !(b[C.language] || '').split(';').map(s => s.trim()).includes(fLang))    return false;
-    if (fBinding && !(b[C.binding]  || '').split(';').map(s => s.trim()).includes(fBinding)) return false;
-    if (fDesigner && (b[C.designer] || '').trim() !== fDesigner) return false;
 
     if (q) {
       const searchable = [
