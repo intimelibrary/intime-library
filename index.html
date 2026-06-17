@@ -199,6 +199,16 @@
       white-space: nowrap;
     }
 
+    /* 태그가 들어가는 셀 — 줄바꿈 허용, 클리핑 해제 */
+    .cell-tags {
+      overflow: visible;
+      white-space: normal;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      align-content: flex-start;
+    }
+
     .cell-year {
       font-family: var(--font-mono);
       font-size: 12px;
@@ -868,18 +878,18 @@ function renderMore() {
 
     const v = (col) => (book[C[col]] || '').trim();
     const esc = (s) => (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    // 태그 가능한 셀 — ; 구분 다중값을 각각 개별 태그로 렌더링
+    // 태그 가능한 셀 — ; 구분 다중값을 각각 개별 태그로 렌더링, 줄바꿈 허용
     const tagCell = (cls, field, val) => {
       const parts = val ? val.split(';').map(s => s.trim()).filter(Boolean) : [];
       const tags = parts.map(p =>
         `<span class="cell-tag" data-field="${field}" data-val="${esc(p)}">${esc(p)}</span>`
       ).join('');
-      return `<span class="cell ${cls}">${tags}</span>`;
+      return `<span class="cell ${cls} cell-tags">${tags}</span>`;
     };
 
     row.innerHTML = `
       <div class="book-row-main">
-        ${tagCell('cell-year',      'year',      v('year'))}
+        <span class="cell cell-year">${esc(v('year'))}</span>
         <span class="cell cell-title">${esc(v('title'))}</span>
         ${tagCell('cell-type',      'type',      v('type'))}
         ${tagCell('cell-author',    'author',    v('author'))}
