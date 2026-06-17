@@ -199,19 +199,49 @@
       white-space: nowrap;
     }
 
-    /* 태그 셀: 기본은 한 줄로 쭉 나열 (짤림 없음), 호버·클릭 시 줄바꿈 */
+    /* 태그 셀: [태그 영역(overflow:hidden) | …] 2단 구조, 호버·클릭 시 전체 wrap */
     .cell-tags {
-      overflow: visible;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      overflow: hidden;
       white-space: normal;
+    }
+
+    .cell-tags-inner {
       display: flex;
       flex-wrap: nowrap;
       gap: 3px;
+      overflow: hidden;
+      min-width: 0;
       align-items: center;
+    }
+
+    .cell-more {
+      font-size: 11px;
+      color: var(--text-muted);
+      padding-left: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .book-row:hover .cell-tags,
     .book-row.expanded .cell-tags {
+      display: flex;
       flex-wrap: wrap;
+      gap: 3px;
+      overflow: visible;
+    }
+
+    /* 호버·클릭 시 inner 래퍼를 투명화해 태그가 outer flex에 직접 참여 */
+    .book-row:hover .cell-tags-inner,
+    .book-row.expanded .cell-tags-inner {
+      display: contents;
+    }
+
+    .book-row:hover .cell-more,
+    .book-row.expanded .cell-more {
+      display: none;
     }
 
     .cell-year {
@@ -901,13 +931,14 @@ function renderMore() {
 
     const v = (col) => (book[C[col]] || '').trim();
     const esc = (s) => (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    // 태그 가능한 셀 — ; 구분 다중값을 각각 개별 태그로 렌더링, 줄바꿈 허용
+    // 태그 가능한 셀 — 내부: overflow:hidden 래퍼 + 오른쪽에 … 고정
     const tagCell = (cls, field, val) => {
       const parts = val ? val.split(';').map(s => s.trim()).filter(Boolean) : [];
       const tags = parts.map(p =>
         `<span class="cell-tag" data-field="${field}" data-val="${esc(p)}">${esc(p)}</span>`
       ).join('');
-      return `<span class="cell ${cls} cell-tags">${tags}</span>`;
+      const more = parts.length > 1 ? `<span class="cell-more">…</span>` : '';
+      return `<span class="cell ${cls} cell-tags"><span class="cell-tags-inner">${tags}</span>${more}</span>`;
     };
 
     row.innerHTML = `
