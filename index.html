@@ -837,13 +837,22 @@ function bindEvents() {
     const row = e.target.closest('.book-row');
     if (row) {
       const id = Number(row.dataset.id);
+      // 변경 전, 현재 펼쳐진 행을 기억 (접히면서 레이아웃이 밀릴 수 있음)
+      const prevRow = document.querySelector('.book-row.expanded');
       expandedId = expandedId === id ? null : id;
       document.querySelectorAll('.book-row.expanded').forEach(r => r.classList.remove('expanded'));
       if (expandedId !== null) row.classList.add('expanded');
       // 펼친 책이 있으면 나머지 행을 흐리게
       document.getElementById('book-list').classList.toggle('has-expanded', expandedId !== null);
       // 펼칠 때: 해당 셀이 col header 바로 밑에 오도록 부드럽게 스크롤
-      if (expandedId !== null) scrollRowUnderHeader(row);
+      if (expandedId !== null) {
+        // 이전에 펼쳐진 행이 이 행보다 위에 있으면, 접히며 레이아웃이 위로 밀리므로
+        // 접힘 트랜지션(0.18s)이 끝난 뒤 위치를 측정해 스크롤
+        const collapsingAbove = prevRow && prevRow !== row &&
+          prevRow.getBoundingClientRect().top < row.getBoundingClientRect().top;
+        if (collapsingAbove) setTimeout(() => scrollRowUnderHeader(row), 200);
+        else scrollRowUnderHeader(row);
+      }
     }
   });
 }
