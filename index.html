@@ -1040,6 +1040,7 @@ function addTag(fieldKey, value) {
   activeTags[fieldKey] = value;
   renderTagBar();
   applyFilters();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function removeTag(fieldKey) {
