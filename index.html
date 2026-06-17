@@ -200,13 +200,14 @@
     }
 
     /* 태그가 들어가는 셀 — 줄바꿈 허용, 클리핑 해제 */
+    /* 메인 행: 넘치는 태그는 숨김 (1~2개만 보임) */
     .cell-tags {
-      overflow: visible;
+      overflow: hidden;
       white-space: normal;
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: 3px;
-      align-content: flex-start;
+      align-items: center;
     }
 
     .cell-year {
@@ -287,6 +288,17 @@
     }
 
     .detail-value.empty { color: var(--text-light); }
+
+    /* 전체 가로폭 detail 항목 (저자/작가) */
+    .detail-wide {
+      grid-column: 1 / -1;
+    }
+    .detail-wide .detail-value {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      padding-top: 2px;
+    }
 
     /* ── LOADING / EMPTY STATES ── */
     #state-overlay {
@@ -902,6 +914,7 @@ function renderMore() {
       </div>
       <div class="book-detail">
         <div class="detail-grid">
+          ${detailItem('저자/작가',             v('author'),       false, 'author',       true)}
           ${detailItem('분야',                 v('field'),        false, 'field')}
           ${detailItem('판형',                 v('format'))}
           ${detailItem('면수',                 v('pages'),        true)}
@@ -925,7 +938,7 @@ function renderMore() {
   });
 }  // end renderMore
 
-function detailItem(label, value, mono = false, fieldKey = '') {
+function detailItem(label, value, mono = false, fieldKey = '', wide = false) {
   const isEmpty = !value;
   const cls = mono ? 'detail-value mono' : 'detail-value';
   const esc = (s) => (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -941,7 +954,7 @@ function detailItem(label, value, mono = false, fieldKey = '') {
     inner = esc(value);
   }
   return `
-    <div class="detail-item">
+    <div class="detail-item${wide ? ' detail-wide' : ''}">
       <div class="detail-label">${label}</div>
       <div class="${cls}${isEmpty ? ' empty' : ''}">${inner}</div>
     </div>
