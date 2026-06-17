@@ -41,7 +41,6 @@
       top: 0;
       z-index: 100;
       background: var(--bg);
-      border-bottom: 1px solid var(--border);
     }
 
     #header-inner {
@@ -149,9 +148,6 @@
       padding: 8px 32px;
       border-bottom: 1px solid var(--border);
       background: var(--bg);
-      position: sticky;
-      top: var(--header-height, 113px);
-      z-index: 90;
     }
 
     .col-header {
@@ -561,17 +557,16 @@
   </div>
   <!-- ── TAG BAR ── -->
   <div id="tag-bar"></div>
+  <!-- ── COLUMN HEADERS (헤더에 포함되어 함께 고정) ── -->
+  <div id="col-headers">
+    <span class="col-header" data-col="year">연도</span>
+    <span class="col-header" data-col="title">제목</span>
+    <span class="col-header" data-col="type">유형</span>
+    <span class="col-header" data-col="author">저자/작가</span>
+    <span class="col-header" data-col="designer">디자이너</span>
+    <span class="col-header" data-col="publisher">발행처</span>
+  </div>
 </header>
-
-<!-- ── COLUMN HEADERS ── -->
-<div id="col-headers">
-  <span class="col-header" data-col="year">연도</span>
-  <span class="col-header" data-col="title">제목</span>
-  <span class="col-header" data-col="type">유형</span>
-  <span class="col-header" data-col="author">저자/작가</span>
-  <span class="col-header" data-col="designer">디자이너</span>
-  <span class="col-header" data-col="publisher">발행처</span>
-</div>
 
 <!-- ── MAIN CONTENT ── -->
 <main>
@@ -732,9 +727,6 @@ function init() {
   applyFilters();
   document.getElementById('state-overlay')?.remove();
 
-  document.getElementById('col-headers').style.top =
-    document.getElementById('header').offsetHeight + 'px';
-
   setupScrollObserver();
 }
 
@@ -850,8 +842,17 @@ function bindEvents() {
       if (expandedId !== null) row.classList.add('expanded');
       // 펼친 책이 있으면 나머지 행을 흐리게
       document.getElementById('book-list').classList.toggle('has-expanded', expandedId !== null);
+      // 펼칠 때: 해당 셀이 col header 바로 밑에 오도록 부드럽게 스크롤
+      if (expandedId !== null) scrollRowUnderHeader(row);
     }
   });
+}
+
+// 클릭한 행을 고정 헤더(검색·태그·열헤더) 바로 아래로 부드럽게 스크롤
+function scrollRowUnderHeader(row) {
+  const headerH = document.getElementById('header').offsetHeight;
+  const y = row.getBoundingClientRect().top + window.scrollY - headerH - 4;
+  window.scrollTo({ top: y, behavior: 'smooth' });
 }
 
 function resetFilters() {
@@ -1070,9 +1071,6 @@ function renderTagBar() {
     chip.querySelector('.tag-chip-x').addEventListener('click', () => removeTag(fieldKey));
     bar.appendChild(chip);
   });
-  // sticky top 재조정
-  const headerH = document.getElementById('header').offsetHeight;
-  document.getElementById('col-headers').style.top = headerH + 'px';
 }
 
 function updateCount() {
