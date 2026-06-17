@@ -844,6 +844,7 @@ function renderMore() {
       `— ${filtered.length.toLocaleString()}권 전체 표시 —`;
     return;
   }
+  const C = CONFIG.COL;
   const batch = filtered.slice(renderedCount, renderedCount + CONFIG.BATCH_SIZE);
   renderedCount += batch.length;
   const list = document.getElementById('book-list');
