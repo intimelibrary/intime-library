@@ -300,15 +300,32 @@
 
     .detail-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: 0;
-      padding-top: 12px;
       padding: 16px 0 0;
+      border-top: 1px solid var(--border-light);
     }
 
     .detail-item {
-      padding: 8px 16px 8px 0;
+      padding: 11px 20px 11px 0;
       border-bottom: 1px solid var(--border-light);
+      border-right: 1px solid var(--border-light);
+    }
+    /* 2·3열은 세로선과 간격을 두기 위해 좌측 패딩 */
+    .detail-item:not(:nth-child(3n+1)) { padding-left: 20px; }
+    /* 각 행 마지막 열(3의 배수)은 세로선 제거 */
+    .detail-item:nth-child(3n) { border-right: none; padding-right: 0; }
+
+    /* 반응형: 좁아지면 2열 → 1열 */
+    @media (max-width: 1080px) {
+      .detail-grid { grid-template-columns: repeat(2, 1fr); }
+      .detail-item { border-right: 1px solid var(--border-light); padding-right: 20px; }
+      .detail-item:nth-child(odd)  { padding-left: 0; }
+      .detail-item:nth-child(even) { padding-left: 20px; border-right: none; padding-right: 0; }
+    }
+    @media (max-width: 640px) {
+      .detail-grid { grid-template-columns: 1fr; }
+      .detail-item { border-right: none; padding-left: 0; padding-right: 0; }
     }
 
     .detail-label {
