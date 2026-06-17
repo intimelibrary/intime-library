@@ -220,13 +220,25 @@
 
     /* ── EXPANDED DETAIL ── */
     .book-detail {
-      display: none;
-      padding: 0 0 20px 0;
-      border-top: 1px solid var(--border-light);
-      margin-top: -1px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.18s ease;
+      border-top: 1px solid transparent;
     }
 
-    .book-row.expanded .book-detail { display: block; }
+    /* 호버: 상세 섹션 살짝 열림 */
+    .book-row:hover .book-detail {
+      max-height: 76px;
+      border-top-color: var(--border-light);
+    }
+
+    /* 클릭: 전체 열림 */
+    .book-row.expanded .book-detail {
+      max-height: 3000px;
+      overflow: visible;
+      border-top-color: var(--border-light);
+      padding-bottom: 20px;
+    }
 
     .detail-grid {
       display: grid;
@@ -315,37 +327,14 @@
     #setup-notice ol { padding-left: 20px; }
     #setup-notice li { margin-bottom: 6px; }
 
-    /* ── PAGINATION ── */
-    #pagination {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 24px 32px;
-      border-top: 1px solid var(--border);
-    }
-
-    .page-btn {
-      height: 28px;
-      min-width: 28px;
-      padding: 0 8px;
-      border: 1px solid var(--border);
-      background: var(--surface);
+    /* ── INFINITE SCROLL SENTINEL ── */
+    #list-end {
+      padding: 32px;
+      text-align: center;
       font-family: var(--font-mono);
-      font-size: 12px;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all 0.1s;
-    }
-
-    .page-btn:hover { border-color: var(--accent); color: var(--text); }
-    .page-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
-    .page-btn:disabled { opacity: 0.3; cursor: default; }
-
-    #page-info {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-left: auto;
+      font-size: 10px;
+      color: var(--text-light);
+      letter-spacing: 0.06em;
     }
 
     /* ── FOOTER ── */
@@ -365,15 +354,22 @@
 
     /* ── TAG BAR ── */
     #tag-bar {
-      display: none;
+      display: flex;
       align-items: center;
       flex-wrap: wrap;
       gap: 6px;
-      padding: 8px 32px;
+      max-height: 0;
+      overflow: hidden;
+      padding: 0 32px;
       background: var(--bg);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0px solid var(--border);
+      transition: max-height 0.15s ease, padding 0.15s ease, border-bottom-width 0.15s;
     }
-    #tag-bar.visible { display: flex; }
+    #tag-bar.visible {
+      max-height: 120px;
+      padding: 8px 32px;
+      border-bottom-width: 1px;
+    }
 
     .tag-bar-label {
       font-size: 10px;
@@ -420,64 +416,9 @@
     }
     .cell-tag[data-val=""] { cursor: default; text-decoration: none; }
 
-    /* ── HOVER CARD ── */
-    #hover-card {
-      position: fixed;
-      z-index: 300;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      box-shadow: 0 6px 24px rgba(0,0,0,0.10);
-      padding: 14px 16px;
-      min-width: 240px;
-      max-width: 320px;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.12s;
-    }
-    #hover-card.visible { opacity: 1; }
-
-    .hc-title {
-      font-size: 13px;
-      font-weight: 500;
-      line-height: 1.4;
-      padding-bottom: 8px;
-      margin-bottom: 8px;
-      border-bottom: 1px solid var(--border-light);
-    }
-
-    .hc-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 16px;
-      padding: 2px 0;
-    }
-
-    .hc-key {
-      font-size: 9px;
-      font-weight: 500;
-      color: var(--text-light);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    .hc-val {
-      font-size: 11px;
-      color: var(--text);
-      text-align: right;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 190px;
-    }
-
-    .hc-val.mono { font-family: var(--font-mono); font-size: 10px; }
-
     /* ── RESPONSIVE ── */
     @media (max-width: 900px) {
-      #header-inner, #filter-bar, #tag-bar, #book-list, #col-headers, #pagination, #footer, #setup-notice {
+      #header-inner, #filter-bar, #tag-bar, #book-list, #col-headers, #footer, #setup-notice, #list-end {
         padding-left: 20px;
         padding-right: 20px;
       }
@@ -523,9 +464,6 @@
   <div id="tag-bar"></div>
 </header>
 
-<!-- ── HOVER CARD ── -->
-<div id="hover-card"></div>
-
 <!-- ── COLUMN HEADERS ── -->
 <div id="col-headers">
   <span class="col-header" data-col="year">연도</span>
@@ -543,7 +481,7 @@
     <p>데이터를 불러오는 중입니다…</p>
   </div>
   <div id="book-list"></div>
-  <div id="pagination"></div>
+  <div id="list-end"></div>
 </main>
 
 <footer id="footer">
@@ -583,7 +521,7 @@ const CONFIG = {
     sponsor:      '후원',
   },
 
-  PAGE_SIZE: 60,   // 한 페이지당 표시 권 수
+  BATCH_SIZE: 80,  // 한 번에 렌더링할 권 수
 };
 
 // 열 너비 (CSS grid-template-columns)
@@ -596,12 +534,12 @@ document.documentElement.style.setProperty(
 // ──────────────────────────────────────────────────────────
 let allBooks = [];
 let filtered = [];
-let currentPage = 1;
+let renderedCount = 0;
 let sortCol = 'year';
 let sortAsc = true;
 let expandedId = null;
-let activeTags = {};        // { fieldKey: value } — 클릭 태그 필터
-let hoverTimer = null;      // 호버카드 딜레이 타이머
+let activeTags = {};
+let scrollObserver = null;
 
 // ──────────────────────────────────────────────────────────
 // LOAD DATA  (우선순위: 로컬 data.csv → Google Sheets → 안내)
@@ -690,15 +628,18 @@ function init() {
   applyFilters();
   document.getElementById('state-overlay')?.remove();
 
-  // sticky col-headers 위치 = 헤더 높이
-  const updateStickyTop = () => {
-    document.getElementById('col-headers').style.top =
-      document.getElementById('header').offsetHeight + 'px';
-  };
-  updateStickyTop();
+  document.getElementById('col-headers').style.top =
+    document.getElementById('header').offsetHeight + 'px';
 
-  // 스크롤 시 호버카드 숨김
-  window.addEventListener('scroll', hideHoverCard, { passive: true });
+  setupScrollObserver();
+}
+
+function setupScrollObserver() {
+  if (scrollObserver) scrollObserver.disconnect();
+  scrollObserver = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) renderMore();
+  }, { rootMargin: '300px' });
+  scrollObserver.observe(document.getElementById('list-end'));
 }
 
 // ──────────────────────────────────────────────────────────
@@ -760,15 +701,11 @@ function buildFilterOptions() {
 // ──────────────────────────────────────────────────────────
 function bindEvents() {
   document.getElementById('search-input').addEventListener('input', debounce(() => {
-    currentPage = 1;
     applyFilters();
   }, 200));
 
   ['filter-year','filter-type','filter-field','filter-lang','filter-binding','filter-designer'].forEach(id => {
-    document.getElementById(id).addEventListener('change', () => {
-      currentPage = 1;
-      applyFilters();
-    });
+    document.getElementById(id).addEventListener('change', () => applyFilters());
   });
 
   document.getElementById('filter-reset').addEventListener('click', resetFilters);
@@ -781,55 +718,33 @@ function bindEvents() {
       document.querySelectorAll('.col-header').forEach(h => h.classList.remove('sorted','desc'));
       el.classList.add('sorted');
       if (!sortAsc) el.classList.add('desc');
-      currentPage = 1;
       applyFilters();
     });
   });
 
-  // 이벤트 위임 — 태그 클릭 + 행 펼치기 + 호버카드
+  // 이벤트 위임 — 태그 클릭 + 행 펼치기
   const list = document.getElementById('book-list');
 
   list.addEventListener('click', e => {
-    // 태그 클릭 (셀 값) — 전파 차단해서 행 펼침 방지
     const tagEl = e.target.closest('.cell-tag');
     if (tagEl && tagEl.dataset.val) {
       e.stopPropagation();
       addTag(tagEl.dataset.field, tagEl.dataset.val);
       return;
     }
-    // 상세 패널 내 태그 클릭
     const detailTag = e.target.closest('.detail-tag');
     if (detailTag && detailTag.dataset.val) {
       e.stopPropagation();
       addTag(detailTag.dataset.field, detailTag.dataset.val);
       return;
     }
-    // 행 클릭 → 펼치기/닫기
     const row = e.target.closest('.book-row');
     if (row) {
       const id = Number(row.dataset.id);
-      hideHoverCard();
       expandedId = expandedId === id ? null : id;
       document.querySelectorAll('.book-row.expanded').forEach(r => r.classList.remove('expanded'));
       if (expandedId !== null) row.classList.add('expanded');
     }
-  });
-
-  // mouseover/mouseout은 버블링이 되므로 이벤트 위임에 적합
-  list.addEventListener('mouseover', e => {
-    const row = e.target.closest('.book-row');
-    if (row) scheduleHoverCard(row, e);
-  });
-
-  list.addEventListener('mouseout', e => {
-    const row = e.target.closest('.book-row');
-    // 행 안에서 자식 요소 간 이동 시에는 취소하지 않음
-    if (row && !row.contains(e.relatedTarget)) cancelHoverCard();
-  });
-
-  list.addEventListener('mousemove', e => {
-    const card = document.getElementById('hover-card');
-    if (card.classList.contains('visible')) positionHoverCard(e);
   });
 }
 
@@ -840,7 +755,6 @@ function resetFilters() {
   });
   activeTags = {};
   renderTagBar();
-  currentPage = 1;
   applyFilters();
 }
 
@@ -902,27 +816,37 @@ function applyFilters() {
   });
 
   updateCount();
-  renderPage();
-  renderPagination();
+  renderInitial();
 }
 
 // ──────────────────────────────────────────────────────────
-// RENDER
+// RENDER (무한 스크롤)
 // ──────────────────────────────────────────────────────────
-function renderPage() {
-  const C = CONFIG.COL;
-  const start = (currentPage - 1) * CONFIG.PAGE_SIZE;
-  const pageBooks = filtered.slice(start, start + CONFIG.PAGE_SIZE);
-
+function renderInitial() {
+  renderedCount = 0;
+  expandedId = null;
   const list = document.getElementById('book-list');
   list.innerHTML = '';
+  document.getElementById('list-end').textContent = '';
 
-  if (pageBooks.length === 0) {
+  if (filtered.length === 0) {
     list.innerHTML = `<div id="state-overlay"><p>검색 결과가 없습니다.</p></div>`;
     return;
   }
+  renderMore();
+}
 
-  pageBooks.forEach(book => {
+function renderMore() {
+  if (renderedCount >= filtered.length) {
+    document.getElementById('list-end').textContent =
+      `— ${filtered.length.toLocaleString()}권 전체 표시 —`;
+    return;
+  }
+  const batch = filtered.slice(renderedCount, renderedCount + CONFIG.BATCH_SIZE);
+  renderedCount += batch.length;
+  const list = document.getElementById('book-list');
+
+  batch.forEach(book => {
     const row = document.createElement('div');
     row.className = 'book-row' + (expandedId === book._id ? ' expanded' : '');
     row.dataset.id = book._id;
@@ -965,7 +889,7 @@ function renderPage() {
 
     list.appendChild(row);
   });
-}
+}  // end renderMore
 
 function detailItem(label, value, mono = false, fieldKey = '') {
   const isEmpty = !value;
@@ -1001,14 +925,12 @@ function addTag(fieldKey, value) {
   if (!value) return;
   activeTags[fieldKey] = value;
   renderTagBar();
-  currentPage = 1;
   applyFilters();
 }
 
 function removeTag(fieldKey) {
   delete activeTags[fieldKey];
   renderTagBar();
-  currentPage = 1;
   applyFilters();
 }
 
@@ -1037,74 +959,6 @@ function renderTagBar() {
   document.getElementById('col-headers').style.top = headerH + 'px';
 }
 
-// ──────────────────────────────────────────────────────────
-// HOVER CARD
-// ──────────────────────────────────────────────────────────
-function scheduleHoverCard(row, e) {
-  cancelHoverCard();
-  hoverTimer = setTimeout(() => showHoverCard(row, e), 280);
-}
-
-function cancelHoverCard() {
-  clearTimeout(hoverTimer);
-  hoverTimer = null;
-  hideHoverCard();
-}
-
-function hideHoverCard() {
-  const card = document.getElementById('hover-card');
-  card.classList.remove('visible');
-}
-
-function showHoverCard(row, e) {
-  if (row.classList.contains('expanded')) return;
-  const id = Number(row.dataset.id);
-  const book = allBooks.find(b => b._id === id);
-  if (!book) return;
-  const C = CONFIG.COL;
-  const v = (col) => (book[C[col]] || '').trim();
-  const esc = (s) => (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-  const rows = [
-    ['유형',       v('type')],
-    ['분야',       v('field')],
-    ['판형',       v('format')],
-    ['면수',       v('pages')],
-    ['종이',       v('paper')],
-    ['제본',       v('binding')],
-    ['인쇄',       v('printing')],
-    ['디자이너',   v('designer')],
-    ['발행처',     v('publisher')],
-    ['발행일',     v('publishDate')],
-  ].filter(([, val]) => val);
-
-  const card = document.getElementById('hover-card');
-  card.innerHTML = `
-    <div class="hc-title">${esc(v('title'))}</div>
-    ${rows.map(([k, val]) => `
-      <div class="hc-row">
-        <span class="hc-key">${k}</span>
-        <span class="hc-val">${esc(val)}</span>
-      </div>`).join('')}
-    <div style="margin-top:8px;font-size:9px;color:var(--text-light);letter-spacing:.04em;">클릭하면 전체 항목 보기</div>
-  `;
-  positionHoverCard(e);
-  card.classList.add('visible');
-}
-
-function positionHoverCard(e) {
-  const card = document.getElementById('hover-card');
-  const margin = 16;
-  const cw = card.offsetWidth || 280;
-  const ch = card.offsetHeight || 200;
-  let x = e.clientX + 18;
-  let y = e.clientY + 10;
-  if (x + cw > window.innerWidth - margin) x = e.clientX - cw - 10;
-  if (y + ch > window.innerHeight - margin) y = window.innerHeight - ch - margin;
-  card.style.left = x + 'px';
-  card.style.top  = y + 'px';
-}
-
 function updateCount() {
   const total = allBooks.length;
   const shown = filtered.length;
@@ -1113,71 +967,6 @@ function updateCount() {
     isFiltered ? `${shown.toLocaleString()} / ${total.toLocaleString()}권` : `${total.toLocaleString()}권`;
   document.getElementById('footer-count').textContent =
     `총 ${total.toLocaleString()}종`;
-}
-
-// ──────────────────────────────────────────────────────────
-// PAGINATION
-// ──────────────────────────────────────────────────────────
-function renderPagination() {
-  const totalPages = Math.ceil(filtered.length / CONFIG.PAGE_SIZE);
-  const pg = document.getElementById('pagination');
-  pg.innerHTML = '';
-
-  if (totalPages <= 1) return;
-
-  const prev = document.createElement('button');
-  prev.className = 'page-btn';
-  prev.textContent = '←';
-  prev.disabled = currentPage === 1;
-  prev.onclick = () => goToPage(currentPage - 1);
-  pg.appendChild(prev);
-
-  // 최대 7개 페이지 버튼
-  const range = pageRange(currentPage, totalPages);
-  let prevNum = null;
-  range.forEach(p => {
-    if (prevNum !== null && p - prevNum > 1) {
-      const ellipsis = document.createElement('span');
-      ellipsis.textContent = '…';
-      ellipsis.style.cssText = 'font-size:12px;color:#aaa;padding:0 4px;';
-      pg.appendChild(ellipsis);
-    }
-    const btn = document.createElement('button');
-    btn.className = 'page-btn' + (p === currentPage ? ' active' : '');
-    btn.textContent = p;
-    btn.onclick = () => goToPage(p);
-    pg.appendChild(btn);
-    prevNum = p;
-  });
-
-  const next = document.createElement('button');
-  next.className = 'page-btn';
-  next.textContent = '→';
-  next.disabled = currentPage === totalPages;
-  next.onclick = () => goToPage(currentPage + 1);
-  pg.appendChild(next);
-
-  const info = document.createElement('span');
-  info.id = 'page-info';
-  info.textContent = `${currentPage} / ${totalPages}`;
-  pg.appendChild(info);
-}
-
-function pageRange(current, total) {
-  const delta = 2;
-  const range = [];
-  for (let i = Math.max(1, current - delta); i <= Math.min(total, current + delta); i++) range.push(i);
-  if (range[0] > 1) range.unshift(1);
-  if (range[range.length - 1] < total) range.push(total);
-  return range;
-}
-
-function goToPage(p) {
-  currentPage = p;
-  expandedId = null;
-  renderPage();
-  renderPagination();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ──────────────────────────────────────────────────────────
