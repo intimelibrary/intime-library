@@ -234,26 +234,30 @@
       overflow: hidden;
       transition: max-height 0.18s ease;
       border-top: 1px solid transparent;
+      background: var(--surface);
+      margin: 0 -32px;
+      padding: 0 32px;
     }
 
     /* 호버: 상세 섹션 살짝 열림 */
     .book-row:hover .book-detail {
       max-height: 76px;
-      border-top-color: var(--border-light);
+      border-top-color: var(--border);
     }
 
     /* 클릭: 전체 열림 */
     .book-row.expanded .book-detail {
       max-height: 3000px;
       overflow: visible;
-      border-top-color: var(--border-light);
-      padding-bottom: 20px;
+      border-top-color: var(--border);
+      padding-bottom: 24px;
     }
 
     .detail-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
       gap: 0;
+      padding-top: 12px;
       padding: 16px 0 0;
     }
 
