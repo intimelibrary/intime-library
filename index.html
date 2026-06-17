@@ -574,7 +574,7 @@ let allBooks = [];
 let filtered = [];
 let renderedCount = 0;
 let sortCol = 'year';
-let sortAsc = true;
+let sortAsc = false;
 let expandedId = null;
 let activeTags = {};
 let scrollObserver = null;
@@ -665,6 +665,9 @@ function showConnectionError() {
 function init() {
   buildFilterOptions();
   bindEvents();
+  // 초기 정렬 표시: 연도 내림차순
+  const initHeader = document.querySelector(`.col-header[data-col="${sortCol}"]`);
+  if (initHeader) { initHeader.classList.add('sorted', 'desc'); }
   applyFilters();
   document.getElementById('state-overlay')?.remove();
 
