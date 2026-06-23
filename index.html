@@ -769,8 +769,12 @@ function applyFilters() {
   const numericCols = ['year', 'pages', 'copies'];
   const isNum = numericCols.includes(sortCol);
   filtered.sort((a, b) => {
-    const av = (a[sortKey] || '').toString();
-    const bv = (b[sortKey] || '').toString();
+    const av = (a[sortKey] || '').toString().trim();
+    const bv = (b[sortKey] || '').toString().trim();
+    // 빈 값은 정렬 방향과 무관하게 항상 맨 아래로
+    if (!av && !bv) return 0;
+    if (!av) return 1;
+    if (!bv) return -1;
     if (isNum) {
       const an = parseFloat(av.replace(/[^\d.]/g, '')) || 0;
       const bn = parseFloat(bv.replace(/[^\d.]/g, '')) || 0;
