@@ -768,6 +768,12 @@ function applyFilters() {
   const sortKey = C[sortCol] || C.year;
   const numericCols = ['year', 'pages', 'copies'];
   const isNum = numericCols.includes(sortCol);
+  const isFormat = sortCol === 'format';
+  // 판형: "가로x세로"에서 첫 숫자쌍을 뽑아 면적(가로×세로) 계산
+  const area = (s) => {
+    const m = s.match(/(\d+(?:\.\d+)?)\s*[x×X*]\s*(\d+(?:\.\d+)?)/);
+    return m ? parseFloat(m[1]) * parseFloat(m[2]) : null;
+  };
   filtered.sort((a, b) => {
     const av = (a[sortKey] || '').toString().trim();
     const bv = (b[sortKey] || '').toString().trim();
@@ -775,6 +781,14 @@ function applyFilters() {
     if (!av && !bv) return 0;
     if (!av) return 1;
     if (!bv) return -1;
+    if (isFormat) {
+      const aa = area(av), ba = area(bv);
+      // 크기를 못 읽는 값(예: "국2절")은 값 있는 책들 중 맨 뒤로
+      if (aa == null && ba == null) return av.localeCompare(bv, 'ko');
+      if (aa == null) return 1;
+      if (ba == null) return -1;
+      return sortAsc ? aa - ba : ba - aa;
+    }
     if (isNum) {
       const an = parseFloat(av.replace(/[^\d.]/g, '')) || 0;
       const bn = parseFloat(bv.replace(/[^\d.]/g, '')) || 0;
