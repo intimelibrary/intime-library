@@ -533,7 +533,8 @@ const CONFIG = {
 // 순서: 제목 유형 분야 연도 판형 면수 부수 종이 인쇄·후가공 제본 저자 기획·편집 사진·일러스트 디자이너 발행처 후원
 document.documentElement.style.setProperty(
   '--grid-cols',
-  '2.3fr 1fr 1fr 0.6fr 1fr 0.55fr 0.55fr 1.3fr 1.7fr 1.1fr 1.5fr 1.4fr 1.6fr 1.4fr 1.5fr 1.1fr'
+  // 제목 유형 분야 연도 판형 면수 부수 종이 인쇄·후가공 제본 저자 기획·편집 사진·일러스트 디자이너 발행처 후원
+  '2.6fr 0.78fr 0.78fr 0.5fr 0.78fr 0.45fr 0.45fr 1.5fr 2fr 1.3fr 1.7fr 1.5fr 1.5fr 1.3fr 1.6fr 1.1fr'
 );
 
 // ──────────────────────────────────────────────────────────
@@ -964,7 +965,7 @@ function renderMore() {
         ${txtCell('cell-pages',                       v('pages'))}
         ${txtCell('cell-copies',                      v('copies'))}
         ${tagCell('cell-paper',        'paper',       v('paper'))}
-        ${txtCell('cell-printing',                    v('printing'))}
+        ${tagCell('cell-printing',     'printing',    v('printing'))}
         ${tagCell('cell-binding',      'binding',     v('binding'), stripBinding)}
         ${tagCell('cell-author',       'author',      v('author'))}
         ${tagCell('cell-editor',       'editor',      v('editor'))}
