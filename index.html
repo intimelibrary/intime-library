@@ -11,15 +11,15 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #f7f6f2;
-      --surface: #fafbf8;
-      --text: #1a1a1a;
-      --text-muted: #888;
-      --text-light: #aaa;
-      --border: #d8d6d0;
-      --border-light: #e8e6e0;
-      --accent: #1a1a1a;
-      --hover: #f0ede6;
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --text: #000000;
+      --text-muted: #777777;
+      --text-light: #aaaaaa;
+      --border: #cccccc;
+      --border-light: #e6e6e6;
+      --accent: #000000;
+      --hover: #f2f2f2;
       --font-body: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
       --font-mono: 'IBM Plex Mono', 'Menlo', monospace;
     }
@@ -204,7 +204,7 @@
       white-space: nowrap;
     }
 
-    /* 넘치는 셀은 hover 시 JS가 .marquee 부여 → 좌우로 흐름 */
+    /* 넘치는 셀은 렌더 시 JS가 .marquee 부여 → 항상 좌우로 흐름 */
     .cell.marquee .cell-inner {
       animation: marquee var(--mq-dur, 4s) ease-in-out infinite alternate;
     }
@@ -696,25 +696,7 @@ function bindEvents() {
       addTag(tagEl.dataset.field, tagEl.dataset.val);
     }
   });
-
-  // 넘치는 셀에 마우스를 올리면 흐르는 텍스트(마퀴) 적용
-  list.addEventListener('mouseover', e => {
-    const cell = e.target.closest('.cell');
-    if (!cell || cell.classList.contains('marquee')) return;
-    const inner = cell.firstElementChild;
-    if (!inner) return;
-    const overflow = inner.scrollWidth - cell.clientWidth;
-    if (overflow > 4) {
-      const dist = overflow + 8;
-      cell.style.setProperty('--mq', `-${dist}px`);
-      cell.style.setProperty('--mq-dur', `${Math.max(2.5, dist / 45)}s`);
-      cell.classList.add('marquee');
-    }
-  });
-  list.addEventListener('mouseout', e => {
-    const cell = e.target.closest('.cell');
-    if (cell && !cell.contains(e.relatedTarget)) cell.classList.remove('marquee');
-  });
+  // 마퀴(흐르는 텍스트)는 렌더 시점에 applyMarquee()로 항상 적용됨
 }
 
 function resetFilters() {
@@ -827,6 +809,7 @@ function renderMore() {
   const batch = filtered.slice(renderedCount, renderedCount + CONFIG.BATCH_SIZE);
   renderedCount += batch.length;
   const list = document.getElementById('book-list');
+  const newRows = [];
 
   batch.forEach(book => {
     const row = document.createElement('div');
@@ -841,15 +824,19 @@ function renderMore() {
       `<span class="cell ${cls}"><span class="cell-inner">${esc(val) || '—'}</span></span>`;
 
     // 태그 셀 — ; 구분 다중값을 개별 태그로, 클릭 시 태그 검색
-    const tagCell = (cls, field, val) => {
+    // transform: 표시 텍스트만 가공 (data-val/필터는 원본 유지)
+    const tagCell = (cls, field, val, transform) => {
       const parts = val ? val.split(';').map(s => s.trim()).filter(Boolean) : [];
       const tags = parts.length
-        ? parts.map(p =>
-            `<span class="cell-tag" data-field="${field}" data-val="${esc(p)}">${esc(p)}</span>`
-          ).join('')
+        ? parts.map(p => {
+            const label = transform ? transform(p) : p;
+            return `<span class="cell-tag" data-field="${field}" data-val="${esc(p)}">${esc(label)}</span>`;
+          }).join('')
         : '<span class="cell-empty">—</span>';
       return `<span class="cell ${cls}"><span class="cell-inner">${tags}</span></span>`;
     };
+    // 제본: 표시에서 "제본" 단어 제거 (예: 무선제본→무선, PUR 제본→PUR)
+    const stripBinding = (s) => s.replace(/\s*제본/g, '').trim() || s;
 
     // 순서: 제목 유형 분야 연도 판형 면수 부수 종이 인쇄·후가공 제본
     //        저자·작가 기획·편집 사진·일러스트 디자이너 발행처 후원
@@ -864,7 +851,7 @@ function renderMore() {
         ${txtCell('cell-copies',                      v('copies'))}
         ${tagCell('cell-paper',        'paper',       v('paper'))}
         ${txtCell('cell-printing',                    v('printing'))}
-        ${tagCell('cell-binding',      'binding',     v('binding'))}
+        ${tagCell('cell-binding',      'binding',     v('binding'), stripBinding)}
         ${tagCell('cell-author',       'author',      v('author'))}
         ${tagCell('cell-editor',       'editor',      v('editor'))}
         ${tagCell('cell-photographer', 'photographer', v('photographer'))}
@@ -874,9 +861,34 @@ function renderMore() {
       </div>
     `;
 
+    newRows.push(row);
     list.appendChild(row);
   });
+
+  // 레이아웃 후, 넘치는 셀에 마퀴(항상 흐르는 텍스트) 적용
+  requestAnimationFrame(() => {
+    const cells = [];
+    newRows.forEach(r => cells.push(...r.querySelectorAll('.cell')));
+    applyMarquee(cells);
+  });
 }  // end renderMore
+
+// 넘치는 셀을 측정해 항상 흐르는 마퀴 적용 (읽기→쓰기 분리로 리플로우 최소화)
+function applyMarquee(cells) {
+  const overflowing = [];
+  cells.forEach(cell => {
+    const inner = cell.firstElementChild;
+    if (!inner) return;
+    const overflow = inner.scrollWidth - cell.clientWidth;
+    if (overflow > 4) overflowing.push([cell, overflow]);
+  });
+  overflowing.forEach(([cell, overflow]) => {
+    const dist = overflow + 8;
+    cell.style.setProperty('--mq', `-${dist}px`);
+    cell.style.setProperty('--mq-dur', `${Math.max(2.5, dist / 45)}s`);
+    cell.classList.add('marquee');
+  });
+}
 
 // ──────────────────────────────────────────────────────────
 // TAG SYSTEM
@@ -917,9 +929,11 @@ function renderTagBar() {
   lbl.textContent = '태그:';
   bar.appendChild(lbl);
   entries.forEach(([fieldKey, val]) => {
+    // 제본은 표시에서 "제본" 단어 제거 (필터 값은 원본 유지)
+    const shownVal = fieldKey === 'binding' ? (val.replace(/\s*제본/g, '').trim() || val) : val;
     const chip = document.createElement('span');
     chip.className = 'tag-chip';
-    chip.innerHTML = `<span class="tag-chip-label">${TAG_LABELS[fieldKey] || fieldKey}</span><span class="tag-chip-val">${val}</span><span class="tag-chip-x" data-field="${fieldKey}">×</span>`;
+    chip.innerHTML = `<span class="tag-chip-label">${TAG_LABELS[fieldKey] || fieldKey}</span><span class="tag-chip-val">${shownVal}</span><span class="tag-chip-x" data-field="${fieldKey}">×</span>`;
     chip.querySelector('.tag-chip-x').addEventListener('click', () => removeTag(fieldKey));
     bar.appendChild(chip);
   });
