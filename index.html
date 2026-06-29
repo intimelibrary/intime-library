@@ -204,13 +204,30 @@
       white-space: nowrap;
     }
 
-    /* 넘치는 셀은 렌더 시 JS가 .marquee 부여 → 항상 좌우로 흐름 */
+    /* 넘치는 셀은 렌더 시 JS가 .marquee 부여 → 항상 균일 속도로 흐름(첫 글자~마지막 글자) */
     .cell.marquee .cell-inner {
-      animation: marquee var(--mq-dur, 4s) ease-in-out infinite alternate;
+      animation: marquee var(--mq-dur, 4s) linear infinite alternate;
     }
     @keyframes marquee {
       0%   { transform: translateX(0); }
       100% { transform: translateX(var(--mq, 0)); }
+    }
+
+    /* 펼침: 넘치는 셀 클릭 시 전체 태그를 펼쳐 정지 표시, 다른 셀은 축소 */
+    .cell.open {
+      overflow: visible;
+      white-space: normal;
+      z-index: 2;
+    }
+    .cell.open .cell-inner {
+      flex-wrap: wrap;
+      row-gap: 4px;
+      animation: none;
+      transform: none;
+    }
+    /* 펼친 셀이 있는 행에서는 나머지 마퀴 정지 */
+    .book-row-main:has(.cell.open) .cell.marquee .cell-inner {
+      animation-play-state: paused;
     }
 
     .cell-year { font-family: var(--font-mono); color: var(--text-muted); }
@@ -713,13 +730,50 @@ function bindEvents() {
   const list = document.getElementById('book-list');
 
   list.addEventListener('click', e => {
-    const tagEl = e.target.closest('.cell-tag');
-    if (tagEl && tagEl.dataset.val) {
-      e.stopPropagation();
-      addTag(tagEl.dataset.field, tagEl.dataset.val);
+    const cell = e.target.closest('.cell');
+    const open = document.querySelector('.cell.open');
+
+    // 1) 펼쳐진 셀 내부 클릭 → 태그면 검색
+    if (open && cell === open) {
+      const tagEl = e.target.closest('.cell-tag');
+      if (tagEl && tagEl.dataset.val) addTag(tagEl.dataset.field, tagEl.dataset.val);
+      return;  // 빈 곳 클릭은 펼친 상태 유지
     }
+    // 2) 다른 곳 클릭 → 펼친 셀 닫기
+    if (open) closeOpenCell();
+    if (!cell) return;
+
+    // 3) 넘치는 셀(마퀴)은 첫 클릭에 펼치기 (바로 검색 X)
+    if (cell.classList.contains('marquee')) {
+      openCell(cell);
+      return;
+    }
+    // 4) 안 넘치는 셀의 태그는 바로 검색
+    const tagEl = e.target.closest('.cell-tag');
+    if (tagEl && tagEl.dataset.val) addTag(tagEl.dataset.field, tagEl.dataset.val);
   });
   // 마퀴(흐르는 텍스트)는 렌더 시점에 applyMarquee()로 항상 적용됨
+}
+
+// 넘치는 셀을 펼쳐 전체 태그를 정지 상태로 보여줌 (다른 셀은 축소)
+function openCell(cell) {
+  closeOpenCell();
+  const rowMain = cell.parentElement;            // .book-row-main
+  const idx = [...rowMain.children].indexOf(cell);
+  const cols = [...rowMain.children].map((c, i) => i === idx ? '6fr' : '0.35fr');
+  rowMain.style.gridTemplateColumns = cols.join(' ');
+  cell.classList.add('open');
+  cell.classList.remove('marquee');              // 마퀴 정지
+  cell.style.removeProperty('--mq');
+}
+
+function closeOpenCell() {
+  const open = document.querySelector('.cell.open');
+  if (!open) return;
+  open.parentElement.style.removeProperty('grid-template-columns');
+  open.classList.remove('open');
+  // 닫은 뒤 다시 넘치면 마퀴 재적용
+  requestAnimationFrame(() => applyMarquee([open]));
 }
 
 function resetFilters() {
@@ -906,9 +960,9 @@ function applyMarquee(cells) {
     if (overflow > 4) overflowing.push([cell, overflow]);
   });
   overflowing.forEach(([cell, overflow]) => {
-    const dist = overflow + 8;
-    cell.style.setProperty('--mq', `-${dist}px`);
-    cell.style.setProperty('--mq-dur', `${Math.max(2.5, dist / 45)}s`);
+    // 첫 글자~마지막 글자까지만 이동(여백 없음), 약 30px/s 균일 속도
+    cell.style.setProperty('--mq', `-${overflow}px`);
+    cell.style.setProperty('--mq-dur', `${Math.max(1.2, overflow / 30)}s`);
     cell.classList.add('marquee');
   });
 }
