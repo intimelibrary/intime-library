@@ -214,6 +214,13 @@
       100% { transform: translateX(var(--mq, 0)); }
     }
 
+    /* 흐르는 셀은 셀 전체가 "펼치기" 버튼 — 내부 태그는 클릭/호버 비활성 */
+    .cell.marquee { cursor: pointer; }
+    .cell.marquee .cell-tag {
+      pointer-events: none;
+      cursor: pointer;
+    }
+
     /* 펼침 팝오버: 넘치는 셀 클릭 시 그 자리에서 내용 크기만큼 깔끔하게 펼침 */
     .cell-popover {
       position: absolute;
