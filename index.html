@@ -175,6 +175,7 @@
     .book-row {
       border-bottom: 1px solid var(--border-light);
       transition: background 0.1s;
+      position: relative;
     }
 
     .book-row:hover { background: var(--hover); margin: 0 -16px; padding: 0 16px; }
@@ -213,22 +214,39 @@
       100% { transform: translateX(var(--mq, 0)); }
     }
 
-    /* 펼침: 넘치는 셀 클릭 시 전체 태그를 펼쳐 정지 표시, 다른 셀은 축소 */
-    .cell.open {
-      overflow: visible;
-      white-space: normal;
-      z-index: 2;
-    }
-    .cell.open .cell-inner {
+    /* 펼침 팝오버: 넘치는 셀 클릭 시 그 자리에서 내용 크기만큼 깔끔하게 펼침 */
+    .cell-popover {
+      position: absolute;
+      top: 50%;
+      z-index: 30;
+      display: flex;
       flex-wrap: wrap;
-      row-gap: 4px;
-      animation: none;
-      transform: none;
+      align-items: center;
+      gap: 4px;
+      max-width: calc(100% - var(--pop-left, 0px));
+      padding: 6px 9px;
+      background: var(--surface);
+      border: 1px solid var(--text);
+      border-radius: 4px;
+      box-shadow: 0 3px 14px rgba(0,0,0,0.14);
+      opacity: 0;
+      transform: translateY(-50%) scale(0.96);
+      transform-origin: left center;
+      transition: opacity 0.14s ease, transform 0.14s ease;
+      pointer-events: none;
     }
-    /* 펼친 셀이 있는 행에서는 나머지 마퀴 정지 */
-    .book-row-main:has(.cell.open) .cell.marquee .cell-inner {
-      animation-play-state: paused;
+    .cell-popover.visible {
+      opacity: 1;
+      transform: translateY(-50%) scale(1);
+      pointer-events: auto;
     }
+    .cell-popover .popover-text {
+      font-size: 11px;
+      white-space: normal;
+      word-break: break-word;
+    }
+    /* 펼침 대상 셀은 강조(밑줄)로 어떤 셀이 열렸는지 표시 */
+    .cell.open { color: var(--text); }
 
     .cell-year { font-family: var(--font-mono); color: var(--text-muted); }
     .cell-title { font-weight: 500; font-size: 12px; }
@@ -726,54 +744,66 @@ function bindEvents() {
     });
   });
 
-  // 이벤트 위임 — 태그 클릭
+  // 이벤트 위임 — 태그 클릭 / 넘치는 셀 펼치기
   const list = document.getElementById('book-list');
 
   list.addEventListener('click', e => {
+    // 1) 팝오버 내부 태그 클릭 → 검색
+    const popTag = e.target.closest('.cell-popover .cell-tag');
+    if (popTag && popTag.dataset.val) { addTag(popTag.dataset.field, popTag.dataset.val); return; }
+    // 팝오버 빈 영역 클릭은 유지
+    if (e.target.closest('.cell-popover')) return;
+    // 2) 팝오버 열려 있으면 다른 곳 클릭 시 닫기
+    if (document.querySelector('.cell-popover')) { closeOpenCell(); return; }
+
     const cell = e.target.closest('.cell');
-    const open = document.querySelector('.cell.open');
-
-    // 1) 펼쳐진 셀 내부 클릭 → 태그면 검색
-    if (open && cell === open) {
-      const tagEl = e.target.closest('.cell-tag');
-      if (tagEl && tagEl.dataset.val) addTag(tagEl.dataset.field, tagEl.dataset.val);
-      return;  // 빈 곳 클릭은 펼친 상태 유지
-    }
-    // 2) 다른 곳 클릭 → 펼친 셀 닫기
-    if (open) closeOpenCell();
     if (!cell) return;
-
     // 3) 넘치는 셀(마퀴)은 첫 클릭에 펼치기 (바로 검색 X)
-    if (cell.classList.contains('marquee')) {
-      openCell(cell);
-      return;
-    }
+    if (cell.classList.contains('marquee')) { openCell(cell); return; }
     // 4) 안 넘치는 셀의 태그는 바로 검색
     const tagEl = e.target.closest('.cell-tag');
     if (tagEl && tagEl.dataset.val) addTag(tagEl.dataset.field, tagEl.dataset.val);
   });
+
+  // 팝오버 바깥(헤더 등) 클릭 시 닫기
+  document.addEventListener('click', e => {
+    if (document.querySelector('.cell-popover') &&
+        !e.target.closest('.cell-popover') && !e.target.closest('.book-row')) {
+      closeOpenCell();
+    }
+  });
   // 마퀴(흐르는 텍스트)는 렌더 시점에 applyMarquee()로 항상 적용됨
 }
 
-// 넘치는 셀을 펼쳐 전체 태그를 정지 상태로 보여줌 (다른 셀은 축소)
+// 넘치는 셀을 클릭하면 그 자리에서 내용 크기만큼 팝오버로 펼침 (이웃 셀 보존)
 function openCell(cell) {
   closeOpenCell();
-  const rowMain = cell.parentElement;            // .book-row-main
-  const idx = [...rowMain.children].indexOf(cell);
-  const cols = [...rowMain.children].map((c, i) => i === idx ? '6fr' : '0.35fr');
-  rowMain.style.gridTemplateColumns = cols.join(' ');
+  const row = cell.closest('.book-row');
+  const left = cell.getBoundingClientRect().left - row.getBoundingClientRect().left;
+
+  const pop = document.createElement('div');
+  pop.className = 'cell-popover';
+  pop.style.left = left + 'px';
+  pop.style.setProperty('--pop-left', left + 'px');
+
+  const tags = cell.querySelectorAll('.cell-tag');
+  if (tags.length) {
+    tags.forEach(t => pop.appendChild(t.cloneNode(true)));   // 태그 복제(클릭 검색 유지)
+  } else {
+    const txt = document.createElement('span');
+    txt.className = 'popover-text';
+    txt.textContent = cell.textContent.trim();               // 텍스트 셀(제목 등) 전체 표시
+    pop.appendChild(txt);
+  }
+
+  row.appendChild(pop);
   cell.classList.add('open');
-  cell.classList.remove('marquee');              // 마퀴 정지
-  cell.style.removeProperty('--mq');
+  requestAnimationFrame(() => pop.classList.add('visible'));  // 부드러운 등장
 }
 
 function closeOpenCell() {
-  const open = document.querySelector('.cell.open');
-  if (!open) return;
-  open.parentElement.style.removeProperty('grid-template-columns');
-  open.classList.remove('open');
-  // 닫은 뒤 다시 넘치면 마퀴 재적용
-  requestAnimationFrame(() => applyMarquee([open]));
+  document.querySelectorAll('.cell-popover').forEach(p => p.remove());
+  document.querySelectorAll('.cell.open').forEach(c => c.classList.remove('open'));
 }
 
 function resetFilters() {
