@@ -521,25 +521,48 @@ async function loadData() {
 
   // 2순위: Google Sheets pub CSV 엔드포인트
   if (CONFIG.SHEET_URL) {
-    const loadTimeout = setTimeout(() => showConnectionError(), 8000);
-    Papa.parse(CONFIG.SHEET_URL, {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      complete(results) {
-        clearTimeout(loadTimeout);
-        if (!results.data || results.data.length === 0) {
-          showConnectionError(); return;
-        }
-        allBooks = results.data.map((row, i) => ({ _id: i, ...row }));
-        init();
-      },
-      error() { clearTimeout(loadTimeout); showConnectionError(); }
-    });
+    loadFromSheet(0);
     return;
   }
 
   showConnectionError();
+}
+
+// 구글 시트 로드 (느린 연결/배포 직후 대비: 긴 타임아웃 + 1회 재시도)
+function loadFromSheet(attempt) {
+  let done = false;
+  const TIMEOUT_MS = 20000;
+  const MAX_ATTEMPTS = 2;
+
+  const fail = () => {
+    if (done) return;
+    done = true;
+    if (attempt + 1 < MAX_ATTEMPTS) {
+      // 캐시 우회를 위해 타임스탬프 쿼리 추가 후 재시도
+      setTimeout(() => loadFromSheet(attempt + 1), 1500);
+    } else {
+      showConnectionError();
+    }
+  };
+
+  const timeout = setTimeout(fail, TIMEOUT_MS);
+  const url = CONFIG.SHEET_URL + (attempt > 0 ? '&_r=' + Date.now() : '');
+
+  Papa.parse(url, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete(results) {
+      if (done) return;
+      if (!results.data || results.data.length === 0) { clearTimeout(timeout); fail(); return; }
+      done = true;
+      clearTimeout(timeout);
+      document.getElementById('setup-notice')?.remove();
+      allBooks = results.data.map((row, i) => ({ _id: i, ...row }));
+      init();
+    },
+    error() { clearTimeout(timeout); fail(); }
+  });
 }
 
 function parseCSVText(text, source) {
