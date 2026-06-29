@@ -32,13 +32,15 @@
       color: var(--text);
       font-size: 14px;
       line-height: 1.6;
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
-    /* ── HEADER ── */
+    /* ── HEADER (상단 고정) ── */
     #header {
-      position: sticky;
-      top: 0;
+      flex: 0 0 auto;
       z-index: 100;
       background: var(--bg);
     }
@@ -141,12 +143,31 @@
 
     #filter-reset:hover { border-color: var(--accent); color: var(--text); }
 
-    /* ── COLUMN HEADERS ── */
+    /* ── 2축 스크롤 테이블 컨테이너 ── */
+    #table-scroll {
+      flex: 1 1 auto;
+      overflow: auto;            /* 가로·세로 모두 스크롤 */
+      position: relative;
+    }
+
+    /* ── COLUMN HEADERS (테이블 상단 고정) ── */
     #col-headers {
       display: grid;
       grid-template-columns: var(--grid-cols);
-      padding: 8px 16px;
+      width: max-content;
+      min-width: 100%;
+      padding: 8px 0;
       border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    /* 제목 헤더(좌상단 코너) — 가로/세로 모두 고정 */
+    #col-headers .col-header:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 21;
       background: var(--bg);
     }
 
@@ -173,16 +194,18 @@
     .col-header.sorted::after { content: ' ↑'; }
     .col-header.sorted.desc::after { content: ' ↓'; }
 
-    /* ── BOOK LIST (단일 행, 16개 컬럼 한 줄) ── */
-    #book-list { padding: 0 16px; }
+    /* ── BOOK LIST (단일 행, 16개 컬럼 가로 스크롤) ── */
+    #book-list { width: max-content; min-width: 100%; }
 
     .book-row {
+      width: max-content;
+      min-width: 100%;
       border-bottom: 1px solid var(--border-light);
       transition: background 0.1s;
       position: relative;
     }
 
-    .book-row:hover { background: var(--hover); margin: 0 -16px; padding: 0 16px; }
+    .book-row:hover { background: var(--hover); }
 
     .book-row-main {
       display: grid;
@@ -191,6 +214,16 @@
       align-items: center;
       gap: 0;
     }
+
+    /* 제목 열 — 가로 스크롤 시 좌측 고정 */
+    .book-row-main .cell:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 6;
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+    }
+    .book-row:hover .cell:first-child { background: var(--hover); }
 
     /* 모든 셀: 고정폭, 넘치면 숨김 → 호버 시 마퀴(흐르는 텍스트) */
     .cell {
@@ -233,12 +266,12 @@
     .cell-popover {
       position: absolute;
       top: 50%;
-      z-index: 30;
+      z-index: 50;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 4px;
-      max-width: calc(100% - var(--pop-left, 0px));
+      max-width: 360px;
       padding: 6px 9px;
       background: var(--surface);
       border: 1px solid var(--text);
@@ -428,11 +461,10 @@
 
     /* ── RESPONSIVE ── */
     @media (max-width: 900px) {
-      #header-inner, #filter-bar, #tag-bar, #book-list, #col-headers, #footer, #setup-notice, #list-end {
+      #header-inner, #filter-bar, #tag-bar, #footer, #setup-notice {
         padding-left: 20px;
         padding-right: 20px;
       }
-      .book-row:hover { margin: 0 -20px; padding: 0 20px; }
       #search-input { flex: 0 0 100%; }
     }
   </style>
@@ -466,7 +498,10 @@
   </div>
   <!-- ── TAG BAR ── -->
   <div id="tag-bar"></div>
-  <!-- ── COLUMN HEADERS (헤더에 포함되어 함께 고정) ── -->
+</header>
+
+<!-- ── 2축 스크롤 테이블 (헤더 상단 고정 · 제목 좌측 고정) ── -->
+<div id="table-scroll">
   <div id="col-headers">
     <span class="col-header" data-col="title">제목</span>
     <span class="col-header" data-col="type">유형</span>
@@ -485,17 +520,13 @@
     <span class="col-header" data-col="publisher">발행처</span>
     <span class="col-header" data-col="sponsor">후원</span>
   </div>
-</header>
-
-<!-- ── MAIN CONTENT ── -->
-<main>
   <div id="state-overlay">
     <div class="spinner"></div>
     <p>데이터를 불러오는 중입니다…</p>
   </div>
   <div id="book-list"></div>
   <div id="list-end"></div>
-</main>
+</div>
 
 <footer id="footer">
   <p>인타임 도서관 · intime Library · 서울문화재단 지원</p>
@@ -542,7 +573,8 @@ const CONFIG = {
 document.documentElement.style.setProperty(
   '--grid-cols',
   // 제목 유형 분야 연도 판형 면수 부수 종이 인쇄·후가공 제본 저자 기획·편집 사진·일러스트 디자이너 발행처 후원
-  '2.6fr 0.78fr 0.78fr 0.5fr 0.78fr 0.45fr 0.45fr 1.5fr 2fr 1.3fr 1.7fr 1.5fr 1.5fr 1.3fr 1.6fr 1.1fr'
+  // 가로 스크롤 전제 — 각 열을 읽기 편한 고정 px로
+  '260px 72px 100px 60px 84px 54px 60px 132px 200px 124px 150px 140px 150px 132px 150px 120px'
 );
 
 // ──────────────────────────────────────────────────────────
@@ -678,7 +710,7 @@ function setupScrollObserver() {
   if (scrollObserver) scrollObserver.disconnect();
   scrollObserver = new IntersectionObserver(entries => {
     if (entries[0].isIntersecting) renderMore();
-  }, { rootMargin: '300px' });
+  }, { root: document.getElementById('table-scroll'), rootMargin: '400px' });
   scrollObserver.observe(document.getElementById('list-end'));
 }
 
@@ -1028,14 +1060,14 @@ function addTag(fieldKey, value) {
   activeTags[fieldKey] = value;
   renderTagBar();
   applyFilters();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('table-scroll').scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function removeTag(fieldKey) {
   delete activeTags[fieldKey];
   renderTagBar();
   applyFilters();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('table-scroll').scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function renderTagBar() {
