@@ -186,7 +186,7 @@
       white-space: nowrap;
       border-right: 1px solid var(--border-light);
     }
-    #col-headers .col-header:first-child { padding-left: 0; }
+    #col-headers .col-header:first-child { padding-left: 12px; }
     #col-headers .col-header:last-child { border-right: none; }
 
     .col-header:hover { color: var(--text); }
@@ -222,6 +222,7 @@
       z-index: 6;
       background: var(--bg);
       border-right: 1px solid var(--border);
+      padding-left: 12px;
     }
     .book-row:hover .cell:first-child { background: var(--hover); }
 
@@ -236,7 +237,6 @@
       line-height: 1.5;
       border-right: 1px solid var(--border-light);
     }
-    .book-row-main .cell:first-child { padding-left: 0; }
     .book-row-main .cell:last-child { border-right: none; }
 
     .cell-inner {
@@ -589,30 +589,55 @@ let activeTags = {};
 let scrollObserver = null;
 
 // ──────────────────────────────────────────────────────────
-// LOAD DATA  (우선순위: 로컬 data.csv → Google Sheets → 안내)
+// LOAD DATA
+//  - localStorage 캐시가 있으면 즉시 렌더(특히 iPad 콜드 로딩 해소)
+//  - 이후 data.csv → 구글 시트 순으로 받아 캐시를 갱신(다음 로드에 반영)
 // ──────────────────────────────────────────────────────────
+const CACHE_KEY = 'intime_csv_v1';
+
+function saveCache(text) {
+  try { localStorage.setItem(CACHE_KEY, text); } catch (_) {}
+}
+
+// CSV 텍스트로 렌더 (첫 렌더면 init, 이미 렌더됐으면 건너뜀)
+function renderCsv(text, alreadyRendered) {
+  if (alreadyRendered) return true;             // 이미 화면이 있으면 재렌더 안 함
+  const results = Papa.parse(text, { header: true, skipEmptyLines: true });
+  if (!results.data || results.data.length === 0) return false;
+  document.getElementById('setup-notice')?.remove();
+  allBooks = results.data.map((row, i) => ({ _id: i, ...row }));
+  init();
+  return true;
+}
+
 async function loadData() {
-  // 1순위: 같은 폴더의 data.csv (로컬 서버 운영 시 가장 안정적)
+  let rendered = false;
+
+  // 0순위: localStorage 캐시 → 즉시 렌더
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) rendered = renderCsv(cached, false);
+  } catch (_) {}
+
+  // 1순위: 같은 폴더의 data.csv (로컬 서버 운영 시)
   try {
     const res = await fetch('./data.csv');
     if (res.ok) {
       const text = await res.text();
-      parseCSVText(text, '로컬 data.csv');
+      saveCache(text);
+      renderCsv(text, rendered);
       return;
     }
   } catch (_) {}
 
-  // 2순위: Google Sheets pub CSV 엔드포인트
-  if (CONFIG.SHEET_URL) {
-    loadFromSheet(0);
-    return;
-  }
+  // 2순위: Google Sheets — 백그라운드로 받아 캐시 갱신
+  if (CONFIG.SHEET_URL) { loadFromSheet(0, rendered); return; }
 
-  showConnectionError();
+  if (!rendered) showConnectionError();
 }
 
-// 구글 시트 로드 (느린 연결/배포 직후 대비: 긴 타임아웃 + 1회 재시도)
-function loadFromSheet(attempt) {
+// 구글 시트 로드 (느린 연결 대비: 긴 타임아웃 + 1회 재시도)
+function loadFromSheet(attempt, alreadyRendered) {
   let done = false;
   const TIMEOUT_MS = 20000;
   const MAX_ATTEMPTS = 2;
@@ -621,9 +646,8 @@ function loadFromSheet(attempt) {
     if (done) return;
     done = true;
     if (attempt + 1 < MAX_ATTEMPTS) {
-      // 캐시 우회를 위해 타임스탬프 쿼리 추가 후 재시도
-      setTimeout(() => loadFromSheet(attempt + 1), 1500);
-    } else {
+      setTimeout(() => loadFromSheet(attempt + 1, alreadyRendered), 1500);
+    } else if (!alreadyRendered) {
       showConnectionError();
     }
   };
@@ -640,23 +664,15 @@ function loadFromSheet(attempt) {
       if (!results.data || results.data.length === 0) { clearTimeout(timeout); fail(); return; }
       done = true;
       clearTimeout(timeout);
-      document.getElementById('setup-notice')?.remove();
-      allBooks = results.data.map((row, i) => ({ _id: i, ...row }));
-      init();
+      saveCache(Papa.unparse(results.data));   // 다음 로드를 위해 캐시 갱신
+      if (!alreadyRendered) {                  // 첫 렌더일 때만 화면 구성
+        document.getElementById('setup-notice')?.remove();
+        allBooks = results.data.map((row, i) => ({ _id: i, ...row }));
+        init();
+      }
     },
     error() { clearTimeout(timeout); fail(); }
   });
-}
-
-function parseCSVText(text, source) {
-  const results = Papa.parse(text, { header: true, skipEmptyLines: true });
-  allBooks = results.data.map((row, i) => ({ _id: i, ...row }));
-  init();
-  // 데이터 출처 표시
-  const src = document.createElement('div');
-  src.style.cssText = 'font-size:10px;color:#aaa;padding:4px 32px 0;letter-spacing:.04em;';
-  src.textContent = '데이터: ' + source;
-  document.getElementById('header').after(src);
 }
 
 function showConnectionError() {
