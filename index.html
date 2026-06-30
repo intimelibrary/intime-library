@@ -227,16 +227,18 @@
     }
 
     /* 넘치는 셀은 렌더 시 JS가 .marquee 부여 → 항상 균일 속도로 흐름(첫 글자~마지막 글자) */
-    /* 애니메이션은 화면에 보이는 행(.in-view)에서만 동작 → iPad 성능 */
-    .book-row.in-view .cell.marquee .cell-inner {
-      animation: marquee var(--mq-dur, 4s) linear infinite alternate;
+    /* 마퀴 애니메이션: 마우스 기기(데스크톱)에서만, 보이는 행(.in-view)만 동작 */
+    @media (hover: hover) and (pointer: fine) {
+      .book-row.in-view .cell.marquee .cell-inner {
+        animation: marquee var(--mq-dur, 4s) linear infinite alternate;
+      }
+      /* 스크롤 중에는 모든 마퀴 일시정지 → 스크롤이 매끄러움 */
+      #table-scroll.scrolling .cell-inner { animation-play-state: paused !important; }
     }
     @keyframes marquee {
       0%   { transform: translateX(0); }
       100% { transform: translateX(var(--mq, 0)); }
     }
-    /* 스크롤 중에는 모든 마퀴 일시정지 → 스크롤이 매끄러움 */
-    #table-scroll.scrolling .cell-inner { animation-play-state: paused !important; }
 
     /* 흐르는 셀은 셀 전체가 "펼치기" 버튼 — 내부 태그는 클릭/호버 비활성 */
     .cell.marquee { cursor: pointer; }
@@ -730,8 +732,12 @@ function setupScrollObserver() {
   bindScrollPause();
 }
 
+// 마퀴(흐르는 텍스트)는 마우스 기기(데스크톱)에서만 — 터치(iPad)는 스크롤 성능 위해 끔
+const FINE_POINTER = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
 // 행 가시성 옵저버 — 보이는 행만 측정·애니메이션(.in-view), 벗어나면 정지
 function setupRowVisObserver() {
+  if (!FINE_POINTER) return;   // 터치 기기는 마퀴 없음 → 측정/관찰 자체를 안 함
   if (rowVisObserver) rowVisObserver.disconnect();
   rowVisObserver = new IntersectionObserver(entries => {
     entries.forEach(e => {
@@ -748,7 +754,7 @@ function setupRowVisObserver() {
 
 // 스크롤 중에는 마퀴 일시정지 → 스크롤 프레임 확보(매끄럽게)
 function bindScrollPause() {
-  if (scrollPauseBound) return;
+  if (!FINE_POINTER || scrollPauseBound) return;   // 터치 기기는 마퀴가 없어 불필요
   scrollPauseBound = true;
   const ts = document.getElementById('table-scroll');
   let t = null;
@@ -850,8 +856,10 @@ function bindEvents() {
 
     const cell = e.target.closest('.cell');
     if (!cell) return;
-    // 3) 넘치는 셀(마퀴)은 첫 클릭에 펼치기 (바로 검색 X)
-    if (cell.classList.contains('marquee')) { openCell(cell); return; }
+    // 3) 넘침 여부를 클릭 시점에 측정(마퀴 클래스에 의존하지 않음 → iPad에서도 동작)
+    const inner = cell.firstElementChild;
+    const overflows = inner && (inner.scrollWidth - cell.clientWidth > 4);
+    if (overflows) { openCell(cell); return; }   // 넘치면 펼치기
     // 4) 안 넘치는 셀의 태그는 바로 검색
     const tagEl = e.target.closest('.cell-tag');
     if (tagEl && tagEl.dataset.val) addTag(tagEl.dataset.field, tagEl.dataset.val);
