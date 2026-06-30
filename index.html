@@ -227,13 +227,16 @@
     }
 
     /* 넘치는 셀은 렌더 시 JS가 .marquee 부여 → 항상 균일 속도로 흐름(첫 글자~마지막 글자) */
-    .cell.marquee .cell-inner {
+    /* 애니메이션은 화면에 보이는 행(.in-view)에서만 동작 → iPad 성능 */
+    .book-row.in-view .cell.marquee .cell-inner {
       animation: marquee var(--mq-dur, 4s) linear infinite alternate;
     }
     @keyframes marquee {
       0%   { transform: translateX(0); }
       100% { transform: translateX(var(--mq, 0)); }
     }
+    /* 스크롤 중에는 모든 마퀴 일시정지 → 스크롤이 매끄러움 */
+    #table-scroll.scrolling .cell-inner { animation-play-state: paused !important; }
 
     /* 흐르는 셀은 셀 전체가 "펼치기" 버튼 — 내부 태그는 클릭/호버 비활성 */
     .cell.marquee { cursor: pointer; }
@@ -556,6 +559,8 @@ let sortCol = 'year';
 let sortAsc = false;
 let activeTags = {};
 let scrollObserver = null;
+let rowVisObserver = null;
+let scrollPauseBound = false;
 
 // ──────────────────────────────────────────────────────────
 // LOAD DATA
@@ -722,6 +727,36 @@ function setupScrollObserver() {
     if (entries[0].isIntersecting) renderMore();
   }, { root: document.getElementById('table-scroll'), rootMargin: '400px' });
   scrollObserver.observe(document.getElementById('list-end'));
+  bindScrollPause();
+}
+
+// 행 가시성 옵저버 — 보이는 행만 측정·애니메이션(.in-view), 벗어나면 정지
+function setupRowVisObserver() {
+  if (rowVisObserver) rowVisObserver.disconnect();
+  rowVisObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      const row = e.target;
+      if (e.isIntersecting) {
+        if (row.dataset.mq !== '1') { measureRowMarquee(row); row.dataset.mq = '1'; }
+        row.classList.add('in-view');
+      } else {
+        row.classList.remove('in-view');
+      }
+    });
+  }, { root: document.getElementById('table-scroll'), rootMargin: '150px 0px' });
+}
+
+// 스크롤 중에는 마퀴 일시정지 → 스크롤 프레임 확보(매끄럽게)
+function bindScrollPause() {
+  if (scrollPauseBound) return;
+  scrollPauseBound = true;
+  const ts = document.getElementById('table-scroll');
+  let t = null;
+  ts.addEventListener('scroll', () => {
+    ts.classList.add('scrolling');
+    clearTimeout(t);
+    t = setTimeout(() => ts.classList.remove('scrolling'), 140);
+  }, { passive: true });
 }
 
 // ──────────────────────────────────────────────────────────
@@ -829,7 +864,7 @@ function bindEvents() {
       closeOpenCell();
     }
   });
-  // 마퀴(흐르는 텍스트)는 렌더 시점에 applyMarquee()로 항상 적용됨
+  // 마퀴는 행이 화면에 보일 때만 rowVisObserver가 측정·동작시킴
 }
 
 // 넘치는 셀을 클릭하면 그 자리에서 내용 크기만큼 팝오버로 펼침 (이웃 셀 보존)
@@ -951,6 +986,7 @@ function renderInitial() {
   const list = document.getElementById('book-list');
   list.innerHTML = '';
   document.getElementById('list-end').textContent = '';
+  setupRowVisObserver();   // 이전 행 관찰 해제 + 새로 시작
 
   if (filtered.length === 0) {
     list.innerHTML = `<div id="state-overlay"><p>검색 결과가 없습니다.</p></div>`;
@@ -1025,16 +1061,13 @@ function renderMore() {
     list.appendChild(row);
   });
 
-  // 레이아웃 후, 넘치는 셀에 마퀴(항상 흐르는 텍스트) 적용
-  requestAnimationFrame(() => {
-    const cells = [];
-    newRows.forEach(r => cells.push(...r.querySelectorAll('.cell')));
-    applyMarquee(cells);
-  });
+  // 새 행을 가시성 옵저버에 등록 — 화면에 들어올 때만 측정·애니메이션
+  newRows.forEach(r => rowVisObserver && rowVisObserver.observe(r));
 }  // end renderMore
 
-// 넘치는 셀을 측정해 항상 흐르는 마퀴 적용 (읽기→쓰기 분리로 리플로우 최소화)
-function applyMarquee(cells) {
+// 한 행의 넘치는 셀을 측정해 마퀴 표시 (행이 처음 보일 때 1회만, 읽기→쓰기 분리)
+function measureRowMarquee(row) {
+  const cells = [...row.querySelectorAll('.cell')];
   const overflowing = [];
   cells.forEach(cell => {
     const inner = cell.firstElementChild;
