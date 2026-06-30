@@ -152,7 +152,6 @@
       left: 0;
       z-index: 21;
       background: var(--bg);
-      box-shadow: 3px 0 0 0 var(--bg), 5px 0 7px -3px rgba(0,0,0,0.10);
     }
 
     .col-header {
@@ -209,8 +208,6 @@
       z-index: 6;
       background: var(--bg);
       border-right: 1px solid var(--border);
-      /* 흰 여백(3px) + 부드러운 그림자로 인접 태그가 경계에 잘려 붙어 보이지 않게 */
-      box-shadow: 3px 0 0 0 var(--bg), 5px 0 7px -3px rgba(0,0,0,0.10);
       padding-left: 12px;
     }
 
@@ -739,34 +736,6 @@ function setupScrollObserver() {
   }, { root: document.getElementById('table-scroll'), rootMargin: '400px' });
   scrollObserver.observe(document.getElementById('list-end'));
   bindScrollPause();
-  bindAxisLock();
-}
-
-// 터치 드래그 시 한 축으로만 스크롤되도록 잠금 (가로 중 세로 X, 세로 중 가로 X)
-// 주축을 정한 뒤 반대 축의 overflow를 hidden으로 막아 네이티브 스크롤과 충돌(흔들림) 없이 잠금
-let axisLockBound = false;
-function bindAxisLock() {
-  if (FINE_POINTER || axisLockBound) return;   // 터치 기기에서만
-  axisLockBound = true;
-  const ts = document.getElementById('table-scroll');
-  let axis = null, sx = 0, sy = 0;
-  const unlock = () => { ts.style.overflowX = 'auto'; ts.style.overflowY = 'auto'; };
-  ts.addEventListener('touchstart', e => {
-    const t = e.touches[0];
-    sx = t.clientX; sy = t.clientY; axis = null;
-    unlock();                                   // 새 제스처는 양축 허용으로 시작
-  }, { passive: true });
-  ts.addEventListener('touchmove', e => {
-    if (axis) return;
-    const t = e.touches[0];
-    const dx = Math.abs(t.clientX - sx), dy = Math.abs(t.clientY - sy);
-    if (dx > 8 || dy > 8) {
-      axis = dx > dy ? 'x' : 'y';
-      // 반대 축을 막음(관성 동안에도 유지, 다음 touchstart에서 해제)
-      if (axis === 'x') ts.style.overflowY = 'hidden';
-      else ts.style.overflowX = 'hidden';
-    }
-  }, { passive: true });
 }
 
 // 마퀴(흐르는 텍스트)는 마우스 기기(데스크톱)에서만 — 터치(iPad)는 스크롤 성능 위해 끔
