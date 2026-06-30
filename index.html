@@ -198,8 +198,7 @@
     .book-row-main {
       display: grid;
       grid-template-columns: var(--grid-cols);
-      padding: 8px 0;
-      align-items: center;
+      align-items: stretch;   /* 모든 셀이 행 높이를 꽉 채움 → 고정 제목 셀 배경 빈틈 제거 */
       gap: 0;
     }
 
@@ -218,13 +217,14 @@
     /* 모든 셀: 고정폭, 넘치면 숨김 → 호버 시 마퀴(흐르는 텍스트) */
     .cell {
       min-width: 0;
-      padding-right: 8px;
-      padding-left: 8px;
+      padding: 8px;          /* 세로 패딩을 셀로 옮겨 고정 제목 셀이 행 전체를 덮게 */
       overflow: hidden;
       position: relative;
       font-size: 12px;
       line-height: 1.5;
       border-right: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;   /* 행 높이를 채우되 내용은 수직 중앙 */
     }
     .book-row-main .cell:last-child { border-right: none; }
 
@@ -743,27 +743,30 @@ function setupScrollObserver() {
 }
 
 // 터치 드래그 시 한 축으로만 스크롤되도록 잠금 (가로 중 세로 X, 세로 중 가로 X)
+// 주축을 정한 뒤 반대 축의 overflow를 hidden으로 막아 네이티브 스크롤과 충돌(흔들림) 없이 잠금
 let axisLockBound = false;
 function bindAxisLock() {
   if (FINE_POINTER || axisLockBound) return;   // 터치 기기에서만
   axisLockBound = true;
   const ts = document.getElementById('table-scroll');
-  let axis = null, sL = 0, sT = 0, sx = 0, sy = 0;
+  let axis = null, sx = 0, sy = 0;
+  const unlock = () => { ts.style.overflowX = 'auto'; ts.style.overflowY = 'auto'; };
   ts.addEventListener('touchstart', e => {
     const t = e.touches[0];
-    sx = t.clientX; sy = t.clientY; sL = ts.scrollLeft; sT = ts.scrollTop; axis = null;
+    sx = t.clientX; sy = t.clientY; axis = null;
+    unlock();                                   // 새 제스처는 양축 허용으로 시작
   }, { passive: true });
   ts.addEventListener('touchmove', e => {
     if (axis) return;
     const t = e.touches[0];
     const dx = Math.abs(t.clientX - sx), dy = Math.abs(t.clientY - sy);
-    if (dx > 6 || dy > 6) axis = dx > dy ? 'x' : 'y';
+    if (dx > 8 || dy > 8) {
+      axis = dx > dy ? 'x' : 'y';
+      // 반대 축을 막음(관성 동안에도 유지, 다음 touchstart에서 해제)
+      if (axis === 'x') ts.style.overflowY = 'hidden';
+      else ts.style.overflowX = 'hidden';
+    }
   }, { passive: true });
-  ts.addEventListener('scroll', () => {
-    if (axis === 'x') { if (ts.scrollTop !== sT) ts.scrollTop = sT; }
-    else if (axis === 'y') { if (ts.scrollLeft !== sL) ts.scrollLeft = sL; }
-  }, { passive: true });
-  ts.addEventListener('touchend', () => { axis = null; }, { passive: true });
 }
 
 // 마퀴(흐르는 텍스트)는 마우스 기기(데스크톱)에서만 — 터치(iPad)는 스크롤 성능 위해 끔
