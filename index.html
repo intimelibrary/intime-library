@@ -47,10 +47,9 @@
 
     #header-inner {
       display: flex;
+      justify-content: center;
       align-items: baseline;
-      gap: 24px;
-      padding: 20px 32px 16px;
-      flex-wrap: wrap;
+      padding: 16px 32px 12px;
     }
 
     #site-title {
@@ -60,44 +59,25 @@
       white-space: nowrap;
     }
 
-    #site-subtitle {
-      font-size: 11px;
-      color: var(--text-muted);
-      font-weight: 300;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-
-    #header-spacer { flex: 1; }
-
-    #count-display {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--text-muted);
-      white-space: nowrap;
-      padding-top: 2px;
-    }
-
     /* ── SEARCH & FILTER BAR ── */
     #filter-bar {
       background: var(--bg);
       border-bottom: 1px solid var(--border);
-      padding: 12px 32px;
+      padding: 8px 32px;
       display: flex;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
       align-items: center;
     }
 
     #search-input {
-      flex: 0 0 260px;
-      height: 32px;
-      padding: 0 12px;
+      flex: 0 0 240px;
+      height: 28px;
+      padding: 0 9px;
       border: 1px solid var(--border);
       background: var(--surface);
       font-family: var(--font-body);
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text);
       outline: none;
       border-radius: 0;
@@ -108,8 +88,8 @@
     #search-input::placeholder { color: var(--text-light); }
 
     .filter-select {
-      height: 32px;
-      padding: 0 28px 0 10px;
+      height: 28px;
+      padding: 0 22px 0 8px;
       border: 1px solid var(--border);
       background: var(--surface);
       font-family: var(--font-body);
@@ -121,16 +101,16 @@
       appearance: none;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23aaa'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
-      background-position: right 10px center;
+      background-position: right 8px center;
       transition: border-color 0.15s;
-      max-width: 150px;
+      max-width: 130px;
     }
 
     .filter-select:focus { border-color: var(--accent); }
 
     #filter-reset {
-      height: 32px;
-      padding: 0 14px;
+      height: 28px;
+      padding: 0 11px;
       border: 1px solid var(--border);
       background: transparent;
       font-family: var(--font-body);
@@ -233,7 +213,7 @@
       padding-left: 8px;
       overflow: hidden;
       position: relative;
-      font-size: 11px;
+      font-size: 12px;
       line-height: 1.5;
       border-right: 1px solid var(--border-light);
     }
@@ -442,8 +422,8 @@
       align-items: center;
       border: 1px solid var(--border);
       border-radius: 20px;
-      padding: 0px 7px;
-      font-size: 10px;
+      padding: 1px 8px;
+      font-size: 12px;
       cursor: pointer;
       background: transparent;
       color: var(--text);
@@ -475,24 +455,18 @@
 <header id="header">
   <div id="header-inner">
     <span id="site-title">인타임 도서관</span>
-    <span id="site-subtitle">intime Library · 2012–2026</span>
-    <div id="header-spacer"></div>
-    <span id="count-display">—</span>
   </div>
   <!-- ── FILTER BAR ── -->
   <div id="filter-bar">
     <input type="search" id="search-input" placeholder="제목, 저자, 디자이너, 발행처 검색…">
     <select class="filter-select" id="filter-year" title="연도">
-      <option value="">연도 전체</option>
+      <option value="">연도</option>
     </select>
     <select class="filter-select" id="filter-type" title="유형">
-      <option value="">유형 전체</option>
+      <option value="">유형</option>
     </select>
     <select class="filter-select" id="filter-field" title="분야">
-      <option value="">분야 전체</option>
-    </select>
-    <select class="filter-select" id="filter-lang" title="언어">
-      <option value="">언어 전체</option>
+      <option value="">분야</option>
     </select>
     <button id="filter-reset">초기화</button>
   </div>
@@ -527,11 +501,6 @@
   <div id="book-list"></div>
   <div id="list-end"></div>
 </div>
-
-<footer id="footer">
-  <p>인타임 도서관 · intime Library · 서울문화재단 지원</p>
-  <p id="footer-count"></p>
-</footer>
 
 <script>
 // ──────────────────────────────────────────────────────────
@@ -779,7 +748,6 @@ function buildFilterOptions() {
 
   populate('filter-type',      C.type);
   populate('filter-field',     C.field);
-  populateMulti('filter-lang',     C.language);   // 예: "한국어; 영어" 분리
 }
 
 // ──────────────────────────────────────────────────────────
@@ -790,7 +758,7 @@ function bindEvents() {
     applyFilters();
   }, 200));
 
-  ['filter-year','filter-type','filter-field','filter-lang'].forEach(id => {
+  ['filter-year','filter-type','filter-field'].forEach(id => {
     document.getElementById(id).addEventListener('change', () => applyFilters());
   });
 
@@ -872,7 +840,7 @@ function closeOpenCell() {
 
 function resetFilters() {
   document.getElementById('search-input').value = '';
-  ['filter-year','filter-type','filter-field','filter-lang'].forEach(id => {
+  ['filter-year','filter-type','filter-field'].forEach(id => {
     document.getElementById(id).value = '';
   });
   activeTags = {};
@@ -889,14 +857,11 @@ function applyFilters() {
   const fYear     = document.getElementById('filter-year').value;
   const fType     = document.getElementById('filter-type').value;
   const fField    = document.getElementById('filter-field').value;
-  const fLang     = document.getElementById('filter-lang').value;
 
   filtered = allBooks.filter(b => {
     if (fYear     && (b[C.year]  || '').trim() !== fYear)  return false;
     if (fType     && (b[C.type]  || '').trim() !== fType)  return false;
     if (fField    && (b[C.field] || '').trim() !== fField) return false;
-    // 세미콜론 구분 다중값 필드는 포함 여부로 비교
-    if (fLang    && !(b[C.language] || '').split(';').map(s => s.trim()).includes(fLang))    return false;
 
     if (q) {
       const searchable = [
@@ -950,7 +915,6 @@ function applyFilters() {
     return sortAsc ? av.localeCompare(bv, 'ko') : bv.localeCompare(av, 'ko');
   });
 
-  updateCount();
   renderInitial();
 }
 
@@ -1108,16 +1072,6 @@ function renderTagBar() {
     chip.querySelector('.tag-chip-x').addEventListener('click', () => removeTag(fieldKey));
     bar.appendChild(chip);
   });
-}
-
-function updateCount() {
-  const total = allBooks.length;
-  const shown = filtered.length;
-  const isFiltered = shown !== total;
-  document.getElementById('count-display').textContent =
-    isFiltered ? `${shown.toLocaleString()} / ${total.toLocaleString()}권` : `${total.toLocaleString()}권`;
-  document.getElementById('footer-count').textContent =
-    `총 ${total.toLocaleString()}종`;
 }
 
 // ──────────────────────────────────────────────────────────
