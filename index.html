@@ -26,6 +26,7 @@
 
     html { scroll-behavior: smooth; }
 
+    html, body { overscroll-behavior: none; }
     body {
       font-family: var(--font-body);
       background: var(--bg);
@@ -36,6 +37,7 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      -webkit-tap-highlight-color: transparent;  /* 터치 시 회색 깜빡임 제거 */
     }
 
     /* ── HEADER (상단 고정) ── */
@@ -128,6 +130,7 @@
       flex: 1 1 auto;
       overflow: auto;            /* 가로·세로 모두 스크롤 */
       position: relative;
+      overscroll-behavior: none; /* 경계에서 튀는(고무줄) 현상 제거 */
     }
 
     /* ── COLUMN HEADERS (테이블 상단 고정) ── */
@@ -149,6 +152,7 @@
       left: 0;
       z-index: 21;
       background: var(--bg);
+      box-shadow: 3px 0 0 0 var(--bg), 5px 0 7px -3px rgba(0,0,0,0.10);
     }
 
     .col-header {
@@ -185,7 +189,11 @@
       position: relative;
     }
 
-    .book-row:hover { background: var(--hover); }
+    /* hover 음영은 마우스 기기에서만 (터치는 회색 잔상 없이 순백 유지) */
+    @media (hover: hover) and (pointer: fine) {
+      .book-row:hover { background: var(--hover); }
+      .book-row:hover .cell:first-child { background: var(--hover); }
+    }
 
     .book-row-main {
       display: grid;
@@ -202,9 +210,10 @@
       z-index: 6;
       background: var(--bg);
       border-right: 1px solid var(--border);
+      /* 흰 여백(3px) + 부드러운 그림자로 인접 태그가 경계에 잘려 붙어 보이지 않게 */
+      box-shadow: 3px 0 0 0 var(--bg), 5px 0 7px -3px rgba(0,0,0,0.10);
       padding-left: 12px;
     }
-    .book-row:hover .cell:first-child { background: var(--hover); }
 
     /* 모든 셀: 고정폭, 넘치면 숨김 → 호버 시 마퀴(흐르는 텍스트) */
     .cell {
@@ -730,6 +739,31 @@ function setupScrollObserver() {
   }, { root: document.getElementById('table-scroll'), rootMargin: '400px' });
   scrollObserver.observe(document.getElementById('list-end'));
   bindScrollPause();
+  bindAxisLock();
+}
+
+// 터치 드래그 시 한 축으로만 스크롤되도록 잠금 (가로 중 세로 X, 세로 중 가로 X)
+let axisLockBound = false;
+function bindAxisLock() {
+  if (FINE_POINTER || axisLockBound) return;   // 터치 기기에서만
+  axisLockBound = true;
+  const ts = document.getElementById('table-scroll');
+  let axis = null, sL = 0, sT = 0, sx = 0, sy = 0;
+  ts.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    sx = t.clientX; sy = t.clientY; sL = ts.scrollLeft; sT = ts.scrollTop; axis = null;
+  }, { passive: true });
+  ts.addEventListener('touchmove', e => {
+    if (axis) return;
+    const t = e.touches[0];
+    const dx = Math.abs(t.clientX - sx), dy = Math.abs(t.clientY - sy);
+    if (dx > 6 || dy > 6) axis = dx > dy ? 'x' : 'y';
+  }, { passive: true });
+  ts.addEventListener('scroll', () => {
+    if (axis === 'x') { if (ts.scrollTop !== sT) ts.scrollTop = sT; }
+    else if (axis === 'y') { if (ts.scrollLeft !== sL) ts.scrollLeft = sL; }
+  }, { passive: true });
+  ts.addEventListener('touchend', () => { axis = null; }, { passive: true });
 }
 
 // 마퀴(흐르는 텍스트)는 마우스 기기(데스크톱)에서만 — 터치(iPad)는 스크롤 성능 위해 끔
