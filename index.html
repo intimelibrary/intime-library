@@ -233,14 +233,18 @@
     }
 
     /* 넘치는 셀은 렌더 시 JS가 .marquee 부여 → 항상 균일 속도로 흐름(첫 글자~마지막 글자) */
-    /* 마퀴 애니메이션: 마우스 기기(데스크톱)에서만, 보이는 행(.in-view)만 동작 */
+    /* 제목 열은 모든 기기(터치 포함)에서 넘칠 때 흐름 — 보이는 행(.in-view)만 */
+    .book-row.in-view .cell-title.marquee .cell-inner {
+      animation: marquee var(--mq-dur, 4s) linear infinite alternate;
+    }
+    /* 데스크톱(마우스)에서는 나머지 열도 함께 흐름 */
     @media (hover: hover) and (pointer: fine) {
       .book-row.in-view .cell.marquee .cell-inner {
         animation: marquee var(--mq-dur, 4s) linear infinite alternate;
       }
-      /* 스크롤 중에는 모든 마퀴 일시정지 → 스크롤이 매끄러움 */
-      #table-scroll.scrolling .cell-inner { animation-play-state: paused !important; }
     }
+    /* 스크롤 중에는 마퀴 일시정지 → 스크롤이 매끄러움 (모든 기기 공통) */
+    #table-scroll.scrolling .cell-inner { animation-play-state: paused !important; }
     @keyframes marquee {
       0%   { transform: translateX(0); }
       100% { transform: translateX(var(--mq, 0)); }
@@ -938,9 +942,9 @@ function setupRowVisObserver() {
   }, { root: document.getElementById('table-scroll'), rootMargin: '150px 0px' });
 }
 
-// 스크롤 중에는 마퀴 일시정지 → 스크롤 프레임 확보(매끄럽게)
+// 스크롤 중에는 마퀴 일시정지 → 스크롤 프레임 확보(매끄럽게). 제목 마퀴 때문에 터치도 필요
 function bindScrollPause() {
-  if (!FINE_POINTER || scrollPauseBound) return;   // 터치 기기는 마퀴가 없어 불필요
+  if (scrollPauseBound) return;
   scrollPauseBound = true;
   const ts = document.getElementById('table-scroll');
   let t = null;
