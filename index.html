@@ -453,6 +453,27 @@
       }
     }
 
+    /* 태그 선택됨 상태 — pendingTags에 추가된 태그는 검정 반전 */
+    .cell-tag.tag-selected {
+      background: var(--text);
+      border-color: var(--text);
+      color: var(--bg);
+    }
+
+    /* 태그바 "검색" 버튼 */
+    .tag-search-btn {
+      height: 22px;
+      padding: 0 12px;
+      background: var(--text);
+      color: var(--bg);
+      border: none;
+      font-family: var(--font-body);
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      letter-spacing: 0.04em;
+    }
+
     /* ── RESPONSIVE ── */
     @media (max-width: 900px) {
       #header-inner, #filter-bar, #tag-bar, #footer, #setup-notice {
@@ -568,7 +589,8 @@ let filtered = [];
 let renderedCount = 0;
 let sortCol = 'year';
 let sortAsc = false;
-let activeTags = {};
+let pendingTags = []; // 선택됐지만 아직 검색 안 된 태그 {field, val}[]
+let appliedTags = []; // 실제 필터에 적용된 태그 {field, val}[]
 let scrollObserver = null;
 let rowVisObserver = null;
 let scrollPauseBound = false;
@@ -855,23 +877,23 @@ function bindEvents() {
   const list = document.getElementById('book-list');
 
   list.addEventListener('click', e => {
-    // 1) 팝오버 내부 태그 클릭 → 검색
+    // 1) 팝오버 내부 태그 클릭 → pendingTags에 토글 (팝오버 유지)
     const popTag = e.target.closest('.cell-popover .cell-tag');
-    if (popTag && popTag.dataset.val) { addTag(popTag.dataset.field, popTag.dataset.val); return; }
-    // 팝오버 빈 영역 클릭은 유지
+    if (popTag && popTag.dataset.val) { togglePendingTag(popTag.dataset.field, popTag.dataset.val); return; }
+    // 팝오버 빈 영역 클릭 → 유지
     if (e.target.closest('.cell-popover')) return;
     // 2) 팝오버 열려 있으면 다른 곳 클릭 시 닫기
     if (document.querySelector('.cell-popover')) { closeOpenCell(); return; }
 
     const cell = e.target.closest('.cell');
     if (!cell) return;
-    // 3) 넘침 여부를 클릭 시점에 측정(마퀴 클래스에 의존하지 않음 → iPad에서도 동작)
+    // 3) 넘침 여부를 클릭 시점에 측정
     const inner = cell.firstElementChild;
     const overflows = inner && (inner.scrollWidth - cell.clientWidth > 4);
-    if (overflows) { openCell(cell); return; }   // 넘치면 펼치기
-    // 4) 안 넘치는 셀의 태그는 바로 검색
+    if (overflows) { openCell(cell); return; }
+    // 4) 안 넘치는 셀의 태그 → pendingTags에 토글
     const tagEl = e.target.closest('.cell-tag');
-    if (tagEl && tagEl.dataset.val) addTag(tagEl.dataset.field, tagEl.dataset.val);
+    if (tagEl && tagEl.dataset.val) togglePendingTag(tagEl.dataset.field, tagEl.dataset.val);
   });
 
   // 팝오버 바깥(헤더 등) 클릭 시 닫기
@@ -897,7 +919,12 @@ function openCell(cell) {
 
   const tags = cell.querySelectorAll('.cell-tag');
   if (tags.length) {
-    tags.forEach(t => pop.appendChild(t.cloneNode(true)));   // 태그 복제(클릭 검색 유지)
+    const pendingSet = new Set(pendingTags.map(t => t.field + '|' + t.val));
+    tags.forEach(t => {
+      const clone = t.cloneNode(true);
+      clone.classList.toggle('tag-selected', pendingSet.has(clone.dataset.field + '|' + clone.dataset.val));
+      pop.appendChild(clone);
+    });
   } else {
     const txt = document.createElement('span');
     txt.className = 'popover-text';
@@ -920,8 +947,10 @@ function resetFilters() {
   ['filter-year','filter-type','filter-field'].forEach(id => {
     document.getElementById(id).value = '';
   });
-  activeTags = {};
+  pendingTags = [];
+  appliedTags = [];
   renderTagBar();
+  updateTagVisuals();
   applyFilters();
 }
 
@@ -934,6 +963,14 @@ function applyFilters() {
   const fYear     = document.getElementById('filter-year').value;
   const fType     = document.getElementById('filter-type').value;
   const fField    = document.getElementById('filter-field').value;
+
+  // 태그 필터 그루핑: 같은 카테고리 OR, 카테고리 간 AND (filter 밖에서 한 번만 계산)
+  const tagsByField = {};
+  for (const { field, val } of appliedTags) {
+    if (!tagsByField[field]) tagsByField[field] = [];
+    tagsByField[field].push(val);
+  }
+  const tagFieldEntries = Object.entries(tagsByField);
 
   filtered = allBooks.filter(b => {
     if (fYear     && (b[C.year]  || '').trim() !== fYear)  return false;
@@ -948,12 +985,12 @@ function applyFilters() {
       if (!searchable.includes(q)) return false;
     }
 
-    // 클릭 태그 필터 — 각 태그에 대해 세미콜론 분리 후 포함 여부 확인
-    for (const [fieldKey, tagVal] of Object.entries(activeTags)) {
+    // 태그 필터: 같은 카테고리 OR, 카테고리 간 AND
+    for (const [fieldKey, vals] of tagFieldEntries) {
       const colName = CONFIG.COL[fieldKey];
       if (!colName) continue;
       const parts = (b[colName] || '').split(';').map(s => s.trim());
-      if (!parts.includes(tagVal)) return false;
+      if (!vals.some(v => parts.includes(v))) return false;
     }
 
     return true;
@@ -1080,6 +1117,8 @@ function renderMore() {
 
   // 새 행을 가시성 옵저버에 등록 — 화면에 들어올 때만 측정·애니메이션
   newRows.forEach(r => rowVisObserver && rowVisObserver.observe(r));
+  // 새로 렌더된 행의 태그에 현재 pending 선택 상태 반영
+  updateTagVisuals();
 }  // end renderMore
 
 // 한 행의 넘치는 셀을 측정해 마퀴 표시 (행이 처음 보일 때 1회만, 읽기→쓰기 분리)
@@ -1110,26 +1149,42 @@ const TAG_LABELS = {
   paper: '종이', sponsor: '후원',
 };
 
-function addTag(fieldKey, value) {
+// 태그 클릭 시 pendingTags에 토글 (필터는 즉시 적용 안 함)
+function togglePendingTag(fieldKey, value) {
   if (!value) return;
-  activeTags[fieldKey] = value;
+  const idx = pendingTags.findIndex(t => t.field === fieldKey && t.val === value);
+  if (idx >= 0) pendingTags.splice(idx, 1);
+  else pendingTags.push({ field: fieldKey, val: value });
   renderTagBar();
+  updateTagVisuals();
+}
+
+// 태그바 × 버튼으로 개별 태그 제거
+function removePendingTag(fieldKey, value) {
+  pendingTags = pendingTags.filter(t => !(t.field === fieldKey && t.val === value));
+  renderTagBar();
+  updateTagVisuals();
+}
+
+// 검색 버튼 → 현재 pendingTags를 필터에 적용
+function applyTagSearch() {
+  appliedTags = [...pendingTags];
   applyFilters();
   document.getElementById('table-scroll').scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function removeTag(fieldKey) {
-  delete activeTags[fieldKey];
-  renderTagBar();
-  applyFilters();
-  document.getElementById('table-scroll').scrollTo({ top: 0, behavior: 'smooth' });
+// DOM 전체의 .cell-tag에 현재 pendingTags 선택 상태 반영
+function updateTagVisuals() {
+  const pendingSet = new Set(pendingTags.map(t => t.field + '|' + t.val));
+  document.querySelectorAll('.cell-tag').forEach(el => {
+    el.classList.toggle('tag-selected', pendingSet.has(el.dataset.field + '|' + el.dataset.val));
+  });
 }
 
 function renderTagBar() {
   const bar = document.getElementById('tag-bar');
-  const entries = Object.entries(activeTags);
   bar.innerHTML = '';
-  if (entries.length === 0) {
+  if (pendingTags.length === 0) {
     bar.classList.remove('visible');
     return;
   }
@@ -1138,15 +1193,23 @@ function renderTagBar() {
   lbl.className = 'tag-bar-label';
   lbl.textContent = '태그:';
   bar.appendChild(lbl);
-  entries.forEach(([fieldKey, val]) => {
-    // 제본은 표시에서 "제본" 단어 제거 (필터 값은 원본 유지)
-    const shownVal = fieldKey === 'binding' ? (val.replace(/\s*제본/g, '').trim() || val) : val;
+  pendingTags.forEach(({ field, val }) => {
+    const shownVal = field === 'binding' ? (val.replace(/\s*제본/g, '').trim() || val) : val;
     const chip = document.createElement('span');
     chip.className = 'tag-chip';
-    chip.innerHTML = `<span class="tag-chip-label">${TAG_LABELS[fieldKey] || fieldKey}</span><span class="tag-chip-val">${shownVal}</span><span class="tag-chip-x" data-field="${fieldKey}">×</span>`;
-    chip.querySelector('.tag-chip-x').addEventListener('click', () => removeTag(fieldKey));
+    const lSpan = document.createElement('span'); lSpan.className = 'tag-chip-label'; lSpan.textContent = TAG_LABELS[field] || field;
+    const vSpan = document.createElement('span'); vSpan.className = 'tag-chip-val';   vSpan.textContent = shownVal;
+    const xSpan = document.createElement('span'); xSpan.className = 'tag-chip-x';    xSpan.textContent = '×';
+    xSpan.addEventListener('click', () => removePendingTag(field, val));
+    chip.append(lSpan, vSpan, xSpan);
     bar.appendChild(chip);
   });
+  // 검색 버튼
+  const searchBtn = document.createElement('button');
+  searchBtn.className = 'tag-search-btn';
+  searchBtn.textContent = '검색';
+  searchBtn.addEventListener('click', applyTagSearch);
+  bar.appendChild(searchBtn);
 }
 
 // ──────────────────────────────────────────────────────────
