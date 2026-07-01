@@ -444,10 +444,13 @@
       vertical-align: middle;
       flex-shrink: 0;
     }
-    .cell-tag:hover {
-      background: var(--text);
-      border-color: var(--text);
-      color: var(--bg);
+    /* 태그 호버 효과: 마우스 기기에서만 (터치에서는 끔 — 오버플로우 셀 탭 시 검은 잔상 방지) */
+    @media (hover: hover) and (pointer: fine) {
+      .cell-tag:hover {
+        background: var(--text);
+        border-color: var(--text);
+        color: var(--bg);
+      }
     }
 
     /* ── RESPONSIVE ── */
@@ -554,7 +557,7 @@ document.documentElement.style.setProperty(
   '--grid-cols',
   // 제목 유형 분야 연도 판형 면수 부수 종이 인쇄·후가공 제본 저자 기획·편집 사진·일러스트 디자이너 발행처 후원
   // 가로 스크롤 전제 — 각 열을 읽기 편한 고정 px로
-  '260px 72px 100px 60px 84px 54px 60px 132px 200px 124px 150px 140px 150px 132px 150px 120px'
+  '280px 80px 120px 60px 90px 56px 64px 160px 240px 140px 200px 180px 170px 170px 200px 220px'
 );
 
 // ──────────────────────────────────────────────────────────
@@ -742,8 +745,8 @@ function setupScrollObserver() {
 const FINE_POINTER = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
 // 행 가시성 옵저버 — 보이는 행만 측정·애니메이션(.in-view), 벗어나면 정지
+// 터치 기기도 실행: 오버플로우 셀에 .marquee 부여 → pointer-events:none → 태그 직접 클릭 차단
 function setupRowVisObserver() {
-  if (!FINE_POINTER) return;   // 터치 기기는 마퀴 없음 → 측정/관찰 자체를 안 함
   if (rowVisObserver) rowVisObserver.disconnect();
   rowVisObserver = new IntersectionObserver(entries => {
     entries.forEach(e => {
