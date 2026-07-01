@@ -474,6 +474,141 @@
       letter-spacing: 0.04em;
     }
 
+    /* "태그 모아보기" 진입 버튼 (필터바) */
+    #open-tag-index {
+      height: 28px;
+      padding: 0 12px;
+      border: 1px solid var(--text);
+      background: transparent;
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--text);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.12s, color 0.12s;
+    }
+    #open-tag-index:hover { background: var(--text); color: var(--bg); }
+
+    /* ══════ 태그 모아보기 뷰 ══════ */
+    /* 뷰 전환: view-index 클래스에 따라 테이블/인덱스 토글 */
+    #tag-index { display: none; }
+    body.view-index #table-scroll,
+    body.view-index #filter-bar,
+    body.view-index #tag-bar { display: none; }
+    body.view-index #tag-index {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 인덱스 상단 바 (뒤로가기 · 제목 · 정렬 토글) */
+    #tag-index-bar {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 32px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    #tag-index-back {
+      height: 26px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: border-color 0.12s, color 0.12s;
+    }
+    #tag-index-back:hover { border-color: var(--accent); color: var(--text); }
+    #tag-index-title { font-size: 13px; font-weight: 500; letter-spacing: -0.01em; }
+
+    .sort-toggle { margin-left: auto; display: flex; }
+    .sort-toggle button {
+      height: 26px;
+      padding: 0 11px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: pointer;
+      margin-left: -1px;   /* 세그먼트 경계 겹침 */
+      transition: background 0.12s, color 0.12s;
+    }
+    .sort-toggle button:hover { color: var(--text); }
+    .sort-toggle button.active {
+      background: var(--text);
+      color: var(--bg);
+      border-color: var(--text);
+      z-index: 1;
+    }
+
+    /* 인덱스 본문: 다단 컬럼 레이아웃 (카테고리 블록이 컬럼으로 흐름) */
+    #tag-index-body {
+      flex: 1 1 auto;
+      overflow: auto;
+      overscroll-behavior: none;
+      padding: 24px 32px 80px;
+      column-count: 2;
+      column-gap: 40px;
+    }
+    /* 아이패드 세로(≈1024px) = 3단, PC는 너비에 맞춰 확장 */
+    @media (min-width: 1000px) { #tag-index-body { column-count: 3; } }
+    @media (min-width: 1440px) { #tag-index-body { column-count: 4; } }
+    @media (min-width: 1840px) { #tag-index-body { column-count: 5; } }
+
+    .tag-cat {
+      break-inside: avoid;         /* 카테고리 블록이 컬럼 경계에서 잘리지 않게 */
+      display: inline-block;
+      width: 100%;
+      vertical-align: top;
+      margin-bottom: 26px;
+    }
+    .tag-cat-head {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      padding-bottom: 6px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--text);
+    }
+    .tag-cat-list { display: flex; flex-direction: column; }
+
+    .tag-item {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      padding: 5px 2px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text);
+      border-bottom: 1px solid var(--border-light);
+    }
+    .tag-item-name { word-break: break-word; }
+    .tag-item-count {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-light);
+      flex-shrink: 0;
+    }
+
+    .tag-more {
+      padding: 7px 2px;
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.03em;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .tag-item:hover { background: var(--hover); }
+      .tag-more:hover { color: var(--text); }
+    }
+
     /* ── RESPONSIVE ── */
     @media (max-width: 900px) {
       #header-inner, #filter-bar, #tag-bar, #footer, #setup-notice {
@@ -504,6 +639,7 @@
       <option value="">분야</option>
     </select>
     <button id="filter-reset">초기화</button>
+    <button id="open-tag-index">태그 모아보기</button>
   </div>
   <!-- ── TAG BAR ── -->
   <div id="tag-bar"></div>
@@ -535,6 +671,20 @@
   </div>
   <div id="book-list"></div>
   <div id="list-end"></div>
+</div>
+
+<!-- ── 태그 모아보기 뷰 ── -->
+<div id="tag-index">
+  <div id="tag-index-bar">
+    <button id="tag-index-back">← 목록</button>
+    <span id="tag-index-title">태그 모아보기</span>
+    <div class="sort-toggle">
+      <button data-sort="count" class="active">빈도순</button>
+      <button data-sort="abc">ㄱ→ㅎ</button>
+      <button data-sort="zyx">ㅎ→ㄱ</button>
+    </div>
+  </div>
+  <div id="tag-index-body"></div>
 </div>
 
 <script>
@@ -745,6 +895,7 @@ function showConnectionError() {
 function init() {
   buildFilterOptions();
   bindEvents();
+  bindTagIndexEvents();
   // 초기 정렬 표시: 연도 내림차순
   const initHeader = document.querySelector(`.col-header[data-col="${sortCol}"]`);
   if (initHeader) { initHeader.classList.add('sorted', 'desc'); }
@@ -965,12 +1116,16 @@ function applyFilters() {
   const fField    = document.getElementById('filter-field').value;
 
   // 태그 필터 그루핑: 같은 카테고리 OR, 카테고리 간 AND (filter 밖에서 한 번만 계산)
-  const tagsByField = {};
-  for (const { field, val } of appliedTags) {
-    if (!tagsByField[field]) tagsByField[field] = [];
-    tagsByField[field].push(val);
+  //  - 값 태그(exact): 세미콜론 분리 후 포함 여부
+  //  - 구간 태그(range, 면수·부수): 숫자 범위 포함 여부 [lo, hi)
+  const exactByField = {};
+  const rangeByField = {};
+  for (const t of appliedTags) {
+    if (t.range) (rangeByField[t.field] ||= []).push(t.range);
+    else         (exactByField[t.field] ||= []).push(t.val);
   }
-  const tagFieldEntries = Object.entries(tagsByField);
+  const exactEntries = Object.entries(exactByField);
+  const rangeEntries = Object.entries(rangeByField);
 
   filtered = allBooks.filter(b => {
     if (fYear     && (b[C.year]  || '').trim() !== fYear)  return false;
@@ -985,12 +1140,20 @@ function applyFilters() {
       if (!searchable.includes(q)) return false;
     }
 
-    // 태그 필터: 같은 카테고리 OR, 카테고리 간 AND
-    for (const [fieldKey, vals] of tagFieldEntries) {
+    // 값 태그 필터: 같은 카테고리 OR, 카테고리 간 AND
+    for (const [fieldKey, vals] of exactEntries) {
       const colName = CONFIG.COL[fieldKey];
       if (!colName) continue;
       const parts = (b[colName] || '').split(';').map(s => s.trim());
       if (!vals.some(v => parts.includes(v))) return false;
+    }
+    // 구간 태그 필터: 숫자값이 선택 구간 중 하나에 들면 통과 [lo, hi)
+    for (const [fieldKey, ranges] of rangeEntries) {
+      const colName = CONFIG.COL[fieldKey];
+      if (!colName) continue;
+      const num = parseFloat((b[colName] || '').replace(/[^\d.]/g, ''));
+      if (isNaN(num)) return false;
+      if (!ranges.some(([lo, hi]) => num >= lo && (hi == null || num < hi))) return false;
     }
 
     return true;
@@ -1143,10 +1306,10 @@ function measureRowMarquee(row) {
 // TAG SYSTEM
 // ──────────────────────────────────────────────────────────
 const TAG_LABELS = {
-  year: '연도', type: '유형', field: '분야', author: '저자/작가',
-  editor: '기획자/편집자', photographer: '사진가', designer: '디자이너',
-  publisher: '발행처', language: '언어', binding: '제본',
-  paper: '종이', sponsor: '후원',
+  year: '연도', type: '유형', field: '분야', format: '판형', pages: '면수', copies: '부수',
+  paper: '종이', printing: '인쇄·후가공', binding: '제본',
+  author: '저자·작가', editor: '기획·편집', photographer: '사진·일러스트',
+  designer: '디자이너', publisher: '발행처', sponsor: '후원', language: '언어',
 };
 
 // 태그 클릭 시 pendingTags에 토글 (필터는 즉시 적용 안 함)
@@ -1159,11 +1322,13 @@ function togglePendingTag(fieldKey, value) {
   updateTagVisuals();
 }
 
-// 태그바 × 버튼으로 개별 태그 제거
+// 태그바 × 버튼으로 개별 태그 제거 → 즉시 재검색(라이브)
 function removePendingTag(fieldKey, value) {
   pendingTags = pendingTags.filter(t => !(t.field === fieldKey && t.val === value));
+  appliedTags = [...pendingTags];
   renderTagBar();
   updateTagVisuals();
+  applyFilters();
 }
 
 // 검색 버튼 → 현재 pendingTags를 필터에 적용
@@ -1210,6 +1375,215 @@ function renderTagBar() {
   searchBtn.textContent = '검색';
   searchBtn.addEventListener('click', applyTagSearch);
   bar.appendChild(searchBtn);
+}
+
+// ──────────────────────────────────────────────────────────
+// TAG INDEX (태그 모아보기 뷰)
+// ──────────────────────────────────────────────────────────
+let SORT_MODE = 'count';   // 'count'(빈도순) | 'abc'(가나다↑) | 'zyx'(가나다↓)
+const COLLAPSE_LIMIT = 20; // 다양한 카테고리는 이 개수에서 접음
+
+// 제본 표시에서 "제본" 단어 제거 (모아보기 표시용)
+const stripBindingDisp = (s) => s.replace(/\s*제본/g, '').trim() || s;
+
+// 면수·부수 구간 정의 [lo, hi) — hi=null이면 이상
+const PAGE_BUCKETS = [
+  { label: '1~50',    lo: 1,   hi: 50 },
+  { label: '50~100',  lo: 50,  hi: 100 },
+  { label: '100~200', lo: 100, hi: 200 },
+  { label: '200~400', lo: 200, hi: 400 },
+  { label: '400+',    lo: 400, hi: null },
+];
+const COPY_BUCKETS = [
+  { label: '1~100',     lo: 1,    hi: 100 },
+  { label: '100~300',   lo: 100,  hi: 300 },
+  { label: '300~500',   lo: 300,  hi: 500 },
+  { label: '500~1000',  lo: 500,  hi: 1000 },
+  { label: '1000+',     lo: 1000, hi: null },
+];
+
+// 카테고리 구성 (제목 제외 전부)
+//  mode: 'value'(값 집계·20개에서 접기) | 'range'(구간) | 'all'(전부 표시)
+//  값이 하나도 없는 카테고리(예: 데이터가 비어있는 유형·분야)는 자동으로 숨김
+const TAG_INDEX_CATS = [
+  { key: 'year',         label: '연도',          mode: 'all' },
+  { key: 'type',         label: '유형',          mode: 'value' },
+  { key: 'field',        label: '분야',          mode: 'value' },
+  { key: 'format',       label: '판형',          mode: 'value' },
+  { key: 'pages',        label: '면수',          mode: 'range', buckets: PAGE_BUCKETS },
+  { key: 'copies',       label: '부수',          mode: 'range', buckets: COPY_BUCKETS },
+  { key: 'paper',        label: '종이',          mode: 'value' },
+  { key: 'printing',     label: '인쇄·후가공',   mode: 'value' },
+  { key: 'binding',      label: '제본',          mode: 'value', transform: stripBindingDisp },
+  { key: 'author',       label: '저자·작가',     mode: 'value' },
+  { key: 'editor',       label: '기획·편집',     mode: 'value' },
+  { key: 'photographer', label: '사진·일러스트', mode: 'value' },
+  { key: 'designer',     label: '디자이너',      mode: 'value' },
+  { key: 'publisher',    label: '발행처',        mode: 'value' },
+  { key: 'sponsor',      label: '후원',          mode: 'value' },
+];
+
+// 한 열의 값을 세미콜론 분리해 태그별 개수 집계
+function tallyField(colName) {
+  const map = new Map();
+  allBooks.forEach(b => {
+    (b[colName] || '').split(';').map(s => s.trim()).filter(Boolean).forEach(v => {
+      map.set(v, (map.get(v) || 0) + 1);
+    });
+  });
+  return [...map.entries()].map(([val, count]) => ({ val, count }));
+}
+
+// 구간별 권수 집계 (0인 구간은 제외)
+function bucketCounts(colName, buckets) {
+  return buckets.map(bk => {
+    let count = 0;
+    allBooks.forEach(b => {
+      const n = parseFloat((b[colName] || '').replace(/[^\d.]/g, ''));
+      if (!isNaN(n) && n >= bk.lo && (bk.hi == null || n < bk.hi)) count++;
+    });
+    return { ...bk, count };
+  }).filter(bk => bk.count > 0);
+}
+
+function sortTagItems(items) {
+  const arr = [...items];
+  if (SORT_MODE === 'count')      arr.sort((a, b) => b.count - a.count || a.val.localeCompare(b.val, 'ko'));
+  else if (SORT_MODE === 'abc')   arr.sort((a, b) => a.val.localeCompare(b.val, 'ko'));
+  else                            arr.sort((a, b) => b.val.localeCompare(a.val, 'ko'));
+  return arr;
+}
+
+function buildTagIndex() {
+  const body = document.getElementById('tag-index-body');
+  body.innerHTML = '';
+  TAG_INDEX_CATS.forEach(cat => {
+    const block = renderCategoryBlock(cat);
+    if (block) body.appendChild(block);   // 값 없는 카테고리는 null → 건너뜀
+  });
+}
+
+function renderCategoryBlock(cat) {
+  let visible = [], hidden = [], isRange = false;
+
+  if (cat.mode === 'range') {
+    isRange = true;
+    visible = bucketCounts(CONFIG.COL[cat.key], cat.buckets);   // 구간은 항상 자연순, 접기 없음
+  } else {
+    let items = tallyField(CONFIG.COL[cat.key]);
+    if (cat.transform) items = items.map(it => ({ ...it, disp: cat.transform(it.val) }));
+    items = sortTagItems(items);
+    if (cat.mode === 'all') {
+      visible = items;                             // 전부 표시 (연도)
+    } else {
+      visible = items.slice(0, COLLAPSE_LIMIT);    // 나머지는 20개에서 접기
+      hidden  = items.slice(COLLAPSE_LIMIT);
+    }
+  }
+
+  // 값이 하나도 없는 카테고리는 렌더하지 않음
+  if (visible.length === 0 && hidden.length === 0) return null;
+
+  const div = document.createElement('div');
+  div.className = 'tag-cat';
+  const head = document.createElement('div');
+  head.className = 'tag-cat-head';
+  head.textContent = cat.label;
+  div.appendChild(head);
+
+  const list = document.createElement('div');
+  list.className = 'tag-cat-list';
+
+  visible.forEach(it => list.appendChild(makeTagItem(cat.key, it, isRange)));
+  // 접힌 항목은 DOM에 미리 넣지 않고 "더보기" 클릭 시 생성 (초기 DOM 경량화)
+  if (hidden.length) {
+    const more = document.createElement('div');
+    more.className = 'tag-more';
+    more.textContent = `… ${hidden.length}개 더보기`;
+    more._hidden = hidden;
+    more._field = cat.key;
+    list.appendChild(more);
+  }
+
+  div.appendChild(list);
+  return div;
+}
+
+// 태그 항목 DOM 하나 생성
+function makeTagItem(field, it, isRange) {
+  const el = document.createElement('div');
+  el.className = 'tag-item';
+  el.dataset.field = field;
+  if (isRange) {
+    el.dataset.range = it.lo + ',' + (it.hi == null ? '' : it.hi);
+    el.dataset.label = it.label;
+  } else {
+    el.dataset.val = it.val;
+  }
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'tag-item-name';
+  nameSpan.textContent = it.disp != null ? it.disp : (it.label != null ? it.label : it.val);
+  const cntSpan = document.createElement('span');
+  cntSpan.className = 'tag-item-count';
+  cntSpan.textContent = '(' + it.count + ')';
+  el.append(nameSpan, cntSpan);
+  return el;
+}
+
+// 태그 클릭 → 즉시 단일 검색 후 메인으로 이동
+function applySingleTag(tag) {
+  pendingTags = [tag];
+  appliedTags = [tag];
+  renderTagBar();
+  applyFilters();
+  showMainView();
+  document.getElementById('table-scroll').scrollTo({ top: 0 });
+}
+
+function showTagIndex() {
+  buildTagIndex();
+  document.body.classList.add('view-index');
+  document.getElementById('tag-index-body').scrollTop = 0;
+}
+function showMainView() {
+  document.body.classList.remove('view-index');
+}
+
+function bindTagIndexEvents() {
+  document.getElementById('open-tag-index').addEventListener('click', showTagIndex);
+  document.getElementById('tag-index-back').addEventListener('click', showMainView);
+
+  // 정렬 토글
+  document.querySelectorAll('.sort-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (SORT_MODE === btn.dataset.sort) return;
+      SORT_MODE = btn.dataset.sort;
+      document.querySelectorAll('.sort-toggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      buildTagIndex();
+    });
+  });
+
+  // 태그/더보기 클릭 (이벤트 위임)
+  document.getElementById('tag-index-body').addEventListener('click', e => {
+    const more = e.target.closest('.tag-more');
+    if (more) {
+      const frag = document.createDocumentFragment();
+      (more._hidden || []).forEach(it => frag.appendChild(makeTagItem(more._field, it, false)));
+      more.parentElement.insertBefore(frag, more);
+      more.remove();
+      return;
+    }
+    const item = e.target.closest('.tag-item');
+    if (!item) return;
+    const field = item.dataset.field;
+    if (item.dataset.range !== undefined) {
+      const [lo, hi] = item.dataset.range.split(',');
+      applySingleTag({ field, range: [parseFloat(lo), hi === '' ? null : parseFloat(hi)], val: item.dataset.label });
+    } else {
+      applySingleTag({ field, val: item.dataset.val });
+    }
+  });
 }
 
 // ──────────────────────────────────────────────────────────
