@@ -553,22 +553,17 @@
       z-index: 1;
     }
 
-    /* 인덱스 본문: 다단 컬럼 레이아웃 — 높이 고정 없이 자라서 부모가 세로 스크롤 */
+    /* 인덱스 본문: 독립 flex 열 — 한 열을 펼쳐도 다른 열은 고정, 그 열만 아래로 늘어남 */
     #tag-index-body {
+      display: flex;
+      align-items: flex-start;
+      gap: 40px;
       padding: 24px 32px 80px;
-      column-count: 2;
-      column-gap: 40px;
     }
-    /* 아이패드 세로(≈1024px) = 3단, PC는 너비에 맞춰 확장 */
-    @media (min-width: 1000px) { #tag-index-body { column-count: 3; } }
-    @media (min-width: 1440px) { #tag-index-body { column-count: 4; } }
-    @media (min-width: 1840px) { #tag-index-body { column-count: 5; } }
+    /* 열 개수는 JS가 너비에 맞춰 생성 (아이패드 세로=3단) */
+    .tag-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
 
     .tag-cat {
-      break-inside: avoid;         /* 카테고리 블록이 컬럼 경계에서 잘리지 않게 */
-      display: inline-block;
-      width: 100%;
-      vertical-align: top;
       /* 카테고리와 다음 카테고리 사이에만 구분선 */
       padding-bottom: 18px;
       margin-bottom: 18px;
@@ -1463,12 +1458,35 @@ function sortTagItems(items) {
   return arr;
 }
 
+// 뷰포트 너비에 맞는 열 개수 (아이패드 세로≈1024 → 3단)
+function indexColumnCount() {
+  const w = window.innerWidth;
+  if (w >= 1840) return 5;
+  if (w >= 1440) return 4;
+  if (w >= 1000) return 3;
+  return 2;
+}
+let idxCols = 0;   // 현재 렌더된 열 개수 (리사이즈 비교용)
+
 function buildTagIndex() {
   const body = document.getElementById('tag-index-body');
   body.innerHTML = '';
+  const n = indexColumnCount();
+  idxCols = n;
+  const cols = [];
+  for (let i = 0; i < n; i++) {
+    const c = document.createElement('div');
+    c.className = 'tag-col';
+    body.appendChild(c);
+    cols.push(c);
+  }
+  // 실제 렌더되는 카테고리만 순서대로 각 열에 라운드로빈 배분 (열마다 독립)
+  let ci = 0;
   TAG_INDEX_CATS.forEach(cat => {
     const block = renderCategoryBlock(cat);
-    if (block) body.appendChild(block);   // 값 없는 카테고리는 null → 건너뜀
+    if (!block) return;                  // 값 없는 카테고리는 건너뜀
+    cols[ci % n].appendChild(block);
+    ci++;
   });
 }
 
@@ -1571,6 +1589,13 @@ function bindTagIndexEvents() {
       else showMainView();
     });
   });
+
+  // 너비가 바뀌어 열 개수가 달라지면 인덱스 뷰만 재구성 (펼침 상태는 초기화됨)
+  window.addEventListener('resize', debounce(() => {
+    if (document.body.classList.contains('view-index') && indexColumnCount() !== idxCols) {
+      buildTagIndex();
+    }
+  }, 200));
 
   // 정렬 토글
   document.querySelectorAll('.sort-toggle button').forEach(btn => {
