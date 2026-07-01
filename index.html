@@ -6,7 +6,7 @@
   <title>인타임 도서관</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -474,57 +474,63 @@
       letter-spacing: 0.04em;
     }
 
-    /* "태그 모아보기" 진입 버튼 (필터바) — 초기화 버튼과 동일 톤 */
-    #open-tag-index {
-      height: 28px;
-      padding: 0 11px;
-      border: 1px solid var(--border);
-      background: transparent;
+    /* ── VIEW NAV (제목 아래: 리스트 보기 | 인덱스 보기) ── */
+    #view-nav {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      padding: 0 32px 12px;
+      background: var(--bg);
+    }
+    .nav-link {
+      background: none;
+      border: none;
       font-family: var(--font-body);
-      font-size: 12px;
+      font-size: 13px;
       color: var(--text-muted);
       cursor: pointer;
-      white-space: nowrap;
-      transition: border-color 0.15s, color 0.15s;
+      padding: 2px 0;
+      letter-spacing: -0.01em;
+      transition: color 0.12s;
     }
-    #open-tag-index:hover { border-color: var(--accent); color: var(--text); }
+    .nav-link:hover { color: var(--text); }
+    .nav-link.active { color: var(--text); font-weight: 500; }
+    .nav-sep { color: var(--border); font-size: 12px; user-select: none; }
 
-    /* ══════ 태그 모아보기 뷰 ══════ */
+    /* ══════ 인덱스 보기 뷰 ══════ */
     /* 뷰 전환: view-index 클래스에 따라 테이블/인덱스 토글 */
     #tag-index { display: none; }
     body.view-index #table-scroll,
     body.view-index #filter-bar,
     body.view-index #tag-bar { display: none; }
+    /* 인덱스 뷰 = 세로 스크롤 (가로 스크롤 없음, 밑으로 쭉) */
     body.view-index #tag-index {
-      display: flex;
+      display: block;
       flex: 1 1 auto;
-      flex-direction: column;
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
+      overscroll-behavior: none;
     }
 
-    /* 인덱스 상단 바 (뒤로가기 · 제목 · 정렬 토글) */
+    /* 인덱스 상단 바 (정렬 토글) — 스크롤해도 상단 고정 */
     #tag-index-bar {
-      flex: 0 0 auto;
+      position: sticky;
+      top: 0;
+      z-index: 5;
       display: flex;
       align-items: center;
-      gap: 14px;
-      padding: 10px 32px;
+      gap: 10px;
+      padding: 9px 32px;
       border-bottom: 1px solid var(--border);
       background: var(--bg);
     }
-    #tag-index-back {
-      height: 26px;
-      padding: 0 10px;
-      border: 1px solid var(--border);
-      background: transparent;
-      font-family: var(--font-body);
-      font-size: 11px;
+    #tag-index-label {
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
       color: var(--text-muted);
-      cursor: pointer;
-      transition: border-color 0.12s, color 0.12s;
     }
-    #tag-index-back:hover { border-color: var(--accent); color: var(--text); }
-    #tag-index-title { font-size: 13px; font-weight: 500; letter-spacing: -0.01em; }
 
     .sort-toggle { margin-left: auto; display: flex; }
     .sort-toggle button {
@@ -547,11 +553,8 @@
       z-index: 1;
     }
 
-    /* 인덱스 본문: 다단 컬럼 레이아웃 (카테고리 블록이 컬럼으로 흐름) */
+    /* 인덱스 본문: 다단 컬럼 레이아웃 — 높이 고정 없이 자라서 부모가 세로 스크롤 */
     #tag-index-body {
-      flex: 1 1 auto;
-      overflow: auto;
-      overscroll-behavior: none;
       padding: 24px 32px 80px;
       column-count: 2;
       column-gap: 40px;
@@ -566,17 +569,16 @@
       display: inline-block;
       width: 100%;
       vertical-align: top;
-      margin-bottom: 26px;
+      /* 카테고리와 다음 카테고리 사이에만 구분선 */
+      padding-bottom: 18px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--border-light);
     }
     .tag-cat-head {
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;   /* 메인의 라벨(태그바·컬럼헤더) 톤과 일치 */
+      font-size: 12px;
+      font-weight: 700;            /* 카테고리 이름만 볼드로 항목과 구분 */
       color: var(--text);
-      padding-bottom: 6px;
-      margin-bottom: 2px;
-      border-bottom: 1px solid var(--border);
+      margin-bottom: 5px;
     }
     .tag-cat-list { display: flex; flex-direction: column; }
 
@@ -584,12 +586,12 @@
       display: flex;
       align-items: baseline;
       gap: 6px;
-      padding: 4px 2px;
+      padding: 3px 2px;
       cursor: pointer;
       font-size: 12px;            /* 메인 셀·태그와 동일 */
       line-height: 1.5;
       color: var(--text);
-      border-bottom: 1px solid var(--border-light);
+      /* 항목 사이 구분선 없음 */
     }
     .tag-item-name { word-break: break-word; }
     .tag-item-count {
@@ -629,6 +631,12 @@
   <div id="header-inner">
     <span id="site-title">인타임 도서관</span>
   </div>
+  <!-- ── VIEW NAV (리스트 / 인덱스) ── -->
+  <nav id="view-nav">
+    <button class="nav-link active" data-view="list">리스트 보기</button>
+    <span class="nav-sep">|</span>
+    <button class="nav-link" data-view="index">인덱스 보기</button>
+  </nav>
   <!-- ── FILTER BAR ── -->
   <div id="filter-bar">
     <input type="search" id="search-input" placeholder="제목, 저자, 디자이너, 발행처 검색…">
@@ -642,7 +650,6 @@
       <option value="">분야</option>
     </select>
     <button id="filter-reset">초기화</button>
-    <button id="open-tag-index">태그 모아보기</button>
   </div>
   <!-- ── TAG BAR ── -->
   <div id="tag-bar"></div>
@@ -676,11 +683,10 @@
   <div id="list-end"></div>
 </div>
 
-<!-- ── 태그 모아보기 뷰 ── -->
+<!-- ── 인덱스 보기 뷰 ── -->
 <div id="tag-index">
   <div id="tag-index-bar">
-    <button id="tag-index-back">← 목록</button>
-    <span id="tag-index-title">태그 모아보기</span>
+    <span id="tag-index-label">정렬</span>
     <div class="sort-toggle">
       <button data-sort="count" class="active">빈도순</button>
       <button data-sort="abc">ㄱ→ㅎ</button>
@@ -1543,18 +1549,28 @@ function applySingleTag(tag) {
   document.getElementById('table-scroll').scrollTo({ top: 0 });
 }
 
+function setNavActive(view) {
+  document.querySelectorAll('.nav-link').forEach(b =>
+    b.classList.toggle('active', b.dataset.view === view));
+}
 function showTagIndex() {
   buildTagIndex();
   document.body.classList.add('view-index');
-  document.getElementById('tag-index-body').scrollTop = 0;
+  setNavActive('index');
+  document.getElementById('tag-index').scrollTop = 0;
 }
 function showMainView() {
   document.body.classList.remove('view-index');
+  setNavActive('list');
 }
 
 function bindTagIndexEvents() {
-  document.getElementById('open-tag-index').addEventListener('click', showTagIndex);
-  document.getElementById('tag-index-back').addEventListener('click', showMainView);
+  document.querySelectorAll('.nav-link').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.view === 'index') showTagIndex();
+      else showMainView();
+    });
+  });
 
   // 정렬 토글
   document.querySelectorAll('.sort-toggle button').forEach(btn => {
