@@ -474,20 +474,20 @@
       letter-spacing: 0.04em;
     }
 
-    /* "태그 모아보기" 진입 버튼 (필터바) */
+    /* "태그 모아보기" 진입 버튼 (필터바) — 초기화 버튼과 동일 톤 */
     #open-tag-index {
       height: 28px;
-      padding: 0 12px;
-      border: 1px solid var(--text);
+      padding: 0 11px;
+      border: 1px solid var(--border);
       background: transparent;
       font-family: var(--font-body);
       font-size: 12px;
-      color: var(--text);
+      color: var(--text-muted);
       cursor: pointer;
       white-space: nowrap;
-      transition: background 0.12s, color 0.12s;
+      transition: border-color 0.15s, color 0.15s;
     }
-    #open-tag-index:hover { background: var(--text); color: var(--bg); }
+    #open-tag-index:hover { border-color: var(--accent); color: var(--text); }
 
     /* ══════ 태그 모아보기 뷰 ══════ */
     /* 뷰 전환: view-index 클래스에 따라 테이블/인덱스 토글 */
@@ -569,13 +569,14 @@
       margin-bottom: 26px;
     }
     .tag-cat-head {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 500;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;   /* 메인의 라벨(태그바·컬럼헤더) 톤과 일치 */
       color: var(--text);
       padding-bottom: 6px;
-      margin-bottom: 4px;
-      border-bottom: 1px solid var(--text);
+      margin-bottom: 2px;
+      border-bottom: 1px solid var(--border);
     }
     .tag-cat-list { display: flex; flex-direction: column; }
 
@@ -583,9 +584,10 @@
       display: flex;
       align-items: baseline;
       gap: 6px;
-      padding: 5px 2px;
+      padding: 4px 2px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 12px;            /* 메인 셀·태그와 동일 */
+      line-height: 1.5;
       color: var(--text);
       border-bottom: 1px solid var(--border-light);
     }
@@ -593,16 +595,17 @@
     .tag-item-count {
       font-family: var(--font-mono);
       font-size: 10px;
-      color: var(--text-light);
+      color: var(--text-muted);  /* 메인 숫자(연도·면수 등)와 동일한 뮤트 */
       flex-shrink: 0;
     }
 
     .tag-more {
-      padding: 7px 2px;
+      padding: 6px 2px;
       cursor: pointer;
-      font-size: 11px;
-      color: var(--text-muted);
-      letter-spacing: 0.03em;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-light);
+      letter-spacing: 0.04em;    /* 메인 리스트 끝 안내문과 같은 모노 뮤트 톤 */
     }
     @media (hover: hover) and (pointer: fine) {
       .tag-item:hover { background: var(--hover); }
