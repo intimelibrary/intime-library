@@ -1,0 +1,613 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --text: #000000;
+  --text-muted: #777777;
+  --text-light: #aaaaaa;
+  --border: #cccccc;
+  --border-light: #e6e6e6;
+  --accent: #000000;
+  --hover: #f2f2f2;
+  --font-body: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Menlo', monospace;
+}
+
+html { scroll-behavior: smooth; }
+
+html, body { overscroll-behavior: none; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  -webkit-tap-highlight-color: transparent;  /* 터치 시 회색 깜빡임 제거 */
+}
+
+/* ── HEADER (상단 고정) ── */
+#header {
+  flex: 0 0 auto;
+  z-index: 100;
+  background: var(--bg);
+}
+
+#header-inner {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  padding: 16px 32px 12px;
+}
+
+#site-title {
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+/* ── SEARCH & FILTER BAR ── */
+#filter-bar {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 32px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
+
+#search-input {
+  flex: 0 0 240px;
+  height: 28px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text);
+  outline: none;
+  border-radius: 0;
+  transition: border-color 0.15s;
+}
+
+#search-input:focus { border-color: var(--accent); }
+#search-input::placeholder { color: var(--text-light); }
+
+.filter-select {
+  height: 28px;
+  padding: 0 22px 0 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  border-radius: 0;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23aaa'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: border-color 0.15s;
+  max-width: 130px;
+}
+
+.filter-select:focus { border-color: var(--accent); }
+
+#filter-reset {
+  height: 28px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+#filter-reset:hover { border-color: var(--accent); color: var(--text); }
+
+/* ── 2축 스크롤 테이블 컨테이너 ── */
+#table-scroll {
+  flex: 1 1 auto;
+  overflow: auto;            /* 가로·세로 모두 스크롤 */
+  position: relative;
+  overscroll-behavior: none; /* 경계에서 튀는(고무줄) 현상 제거 */
+}
+
+/* ── COLUMN HEADERS (테이블 상단 고정) ── */
+#col-headers {
+  display: grid;
+  grid-template-columns: var(--grid-cols);
+  width: max-content;
+  min-width: 100%;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+/* 제목 헤더(좌상단 코너) — 가로/세로 모두 고정 */
+#col-headers .col-header:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 21;
+  background: var(--bg);
+}
+
+.col-header {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.1s;
+  padding-right: 6px;
+  padding-left: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-right: 1px solid var(--border-light);
+}
+#col-headers .col-header:first-child { padding-left: 12px; }
+#col-headers .col-header:last-child { border-right: none; }
+
+.col-header:hover { color: var(--text); }
+.col-header.sorted { color: var(--text); }
+.col-header.sorted::after { content: ' ↑'; }
+.col-header.sorted.desc::after { content: ' ↓'; }
+
+/* ── BOOK LIST (단일 행, 16개 컬럼 가로 스크롤) ── */
+#book-list { width: max-content; min-width: 100%; }
+
+.book-row {
+  width: max-content;
+  min-width: 100%;
+  border-bottom: 1px solid var(--border-light);
+  transition: background 0.1s;
+  position: relative;
+}
+
+/* hover 음영은 마우스 기기에서만 (터치는 회색 잔상 없이 순백 유지) */
+@media (hover: hover) and (pointer: fine) {
+  .book-row:hover { background: var(--hover); }
+  .book-row:hover .cell:first-child { background: var(--hover); }
+}
+
+.book-row-main {
+  display: grid;
+  grid-template-columns: var(--grid-cols);
+  align-items: stretch;   /* 모든 셀이 행 높이를 꽉 채움 → 고정 제목 셀 배경 빈틈 제거 */
+  gap: 0;
+}
+
+/* 제목 열 — 가로 스크롤 시 좌측 고정 */
+.book-row-main .cell:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 6;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  padding-left: 12px;
+}
+
+/* 모든 셀: 고정폭, 넘치면 숨김 → 호버 시 마퀴(흐르는 텍스트) */
+.cell {
+  min-width: 0;
+  padding: 8px;          /* 세로 패딩을 셀로 옮겨 고정 제목 셀이 행 전체를 덮게 */
+  overflow: hidden;
+  position: relative;
+  font-size: 12px;
+  line-height: 1.5;
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;   /* 행 높이를 채우되 내용은 수직 중앙 */
+}
+.book-row-main .cell:last-child { border-right: none; }
+
+.cell-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+/* 넘치는 셀은 렌더 시 JS가 .marquee 부여 → 항상 균일 속도로 흐름(첫 글자~마지막 글자) */
+/* 제목 열은 모든 기기(터치 포함)에서 넘칠 때 흐름 — 보이는 행(.in-view)만 */
+.book-row.in-view .cell-title.marquee .cell-inner {
+  animation: marquee var(--mq-dur, 4s) linear infinite alternate;
+}
+/* 데스크톱(마우스)에서는 나머지 열도 함께 흐름 */
+@media (hover: hover) and (pointer: fine) {
+  .book-row.in-view .cell.marquee .cell-inner {
+    animation: marquee var(--mq-dur, 4s) linear infinite alternate;
+  }
+}
+/* 스크롤 중에는 마퀴 일시정지 → 스크롤이 매끄러움 (모든 기기 공통) */
+#table-scroll.scrolling .cell-inner { animation-play-state: paused !important; }
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(var(--mq, 0)); }
+}
+
+/* 흐르는 셀은 셀 전체가 "펼치기" 버튼 — 내부 태그는 클릭/호버 비활성 */
+.cell.marquee { cursor: pointer; }
+.cell.marquee .cell-tag {
+  pointer-events: none;
+  cursor: pointer;
+}
+
+/* 펼침 팝오버: 넘치는 셀 클릭 시 그 자리에서 내용 크기만큼 깔끔하게 펼침 */
+.cell-popover {
+  position: absolute;
+  top: 50%;
+  z-index: 50;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  max-width: 360px;
+  padding: 6px 9px;
+  background: var(--surface);
+  border: 1px solid var(--text);
+  border-radius: 4px;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.14);
+  opacity: 0;
+  transform: translateY(-50%) scale(0.96);
+  transform-origin: left center;
+  transition: opacity 0.14s ease, transform 0.14s ease;
+  pointer-events: none;
+}
+.cell-popover.visible {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+  pointer-events: auto;
+}
+.cell-popover .popover-text {
+  font-size: 11px;
+  white-space: normal;
+  word-break: break-word;
+}
+/* 펼침 대상 셀은 강조(밑줄)로 어떤 셀이 열렸는지 표시 */
+.cell.open { color: var(--text); }
+
+.cell-year { font-family: var(--font-mono); color: var(--text-muted); }
+.cell-title { font-weight: 500; font-size: 12px; }
+.cell-format, .cell-pages, .cell-copies {
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+.cell-printing { color: var(--text-muted); }
+.cell-empty { color: var(--text-light); }
+
+/* ── LOADING / EMPTY STATES ── */
+#state-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 32px;
+  gap: 12px;
+}
+
+#state-overlay p {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── SETUP NOTICE ── */
+#setup-notice {
+  margin: 32px;
+  padding: 24px 28px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+#setup-notice h3 {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+
+#setup-notice code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--bg);
+  padding: 2px 6px;
+}
+
+#setup-notice ol { padding-left: 20px; }
+#setup-notice li { margin-bottom: 6px; }
+
+/* ── INFINITE SCROLL SENTINEL ── */
+#list-end {
+  padding: 32px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-light);
+  letter-spacing: 0.06em;
+}
+
+/* ── FOOTER ── */
+#footer {
+  border-top: 1px solid var(--border);
+  padding: 20px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#footer p {
+  font-size: 11px;
+  color: var(--text-light);
+  letter-spacing: 0.03em;
+}
+
+/* ── TAG BAR ── */
+#tag-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 0;
+  overflow: hidden;
+  padding: 0 32px;
+  background: var(--bg);
+  border-bottom: 0px solid var(--border);
+  transition: max-height 0.15s ease, padding 0.15s ease, border-bottom-width 0.15s;
+}
+#tag-bar.visible {
+  max-height: 120px;
+  padding: 8px 32px;
+  border-bottom-width: 1px;
+}
+
+.tag-bar-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-right: 2px;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 7px 0 9px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-family: var(--font-body);
+  white-space: nowrap;
+}
+
+.tag-chip-label { opacity: 0.65; font-size: 9px; letter-spacing: .04em; text-transform: uppercase; }
+.tag-chip-val { font-weight: 400; }
+
+.tag-chip-x {
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.55;
+  margin-left: 2px;
+  transition: opacity 0.1s;
+}
+.tag-chip-x:hover { opacity: 1; }
+
+/* ── CLICKABLE CELL VALUES (태그) ── */
+.cell-tag {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text);
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+  line-height: 1.5;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+/* 태그 호버 효과: 마우스 기기에서만 (터치에서는 끔 — 오버플로우 셀 탭 시 검은 잔상 방지) */
+@media (hover: hover) and (pointer: fine) {
+  .cell-tag:hover {
+    background: var(--text);
+    border-color: var(--text);
+    color: var(--bg);
+  }
+}
+
+/* 태그 선택됨 상태 — pendingTags에 추가된 태그는 검정 반전 */
+.cell-tag.tag-selected {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
+}
+
+/* 태그바 "검색" 버튼 */
+.tag-search-btn {
+  height: 22px;
+  padding: 0 12px;
+  background: var(--text);
+  color: var(--bg);
+  border: none;
+  font-family: var(--font-body);
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
+/* ── VIEW NAV (제목 아래: 리스트 보기 | 인덱스 보기) ── */
+#view-nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 0 32px 12px;
+  background: var(--bg);
+}
+.nav-link {
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 0;
+  letter-spacing: -0.01em;
+  transition: color 0.12s;
+}
+.nav-link:hover { color: var(--text); }
+.nav-link.active { color: var(--text); font-weight: 500; }
+.nav-sep { color: var(--border); font-size: 12px; user-select: none; }
+
+/* ══════ 인덱스 보기 뷰 ══════ */
+/* 뷰 전환: view-index 클래스에 따라 테이블/인덱스 토글 */
+#tag-index { display: none; }
+body.view-index #table-scroll,
+body.view-index #filter-bar,
+body.view-index #tag-bar { display: none; }
+/* 인덱스 뷰 = 세로 스크롤 (가로 스크롤 없음, 밑으로 쭉) */
+body.view-index #tag-index {
+  display: block;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+}
+
+/* 인덱스 상단 바 (정렬 토글) — 스크롤해도 상단 고정 */
+#tag-index-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 32px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+#tag-index-label {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.sort-toggle { margin-left: auto; display: flex; }
+.sort-toggle button {
+  height: 26px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-left: -1px;   /* 세그먼트 경계 겹침 */
+  transition: background 0.12s, color 0.12s;
+}
+.sort-toggle button:hover { color: var(--text); }
+.sort-toggle button.active {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+  z-index: 1;
+}
+
+/* 인덱스 본문: 독립 flex 열 — 한 열을 펼쳐도 다른 열은 고정, 그 열만 아래로 늘어남 */
+#tag-index-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 40px;
+  padding: 24px 32px 80px;
+}
+/* 열 개수는 JS가 너비에 맞춰 생성 (아이패드 세로=3단) */
+.tag-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
+
+.tag-cat {
+  /* 카테고리와 다음 카테고리 사이에만 구분선 */
+  padding-bottom: 18px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border-light);
+}
+.tag-cat-head {
+  font-size: 12px;
+  font-weight: 700;            /* 카테고리 이름만 볼드로 항목과 구분 */
+  color: var(--text);
+  margin-bottom: 5px;
+}
+.tag-cat-list { display: flex; flex-direction: column; }
+
+.tag-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 2px;
+  cursor: pointer;
+  font-size: 12px;            /* 메인 셀·태그와 동일 */
+  line-height: 1.5;
+  color: var(--text);
+  /* 항목 사이 구분선 없음 */
+}
+.tag-item-name { word-break: break-word; }
+.tag-item-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);  /* 메인 숫자(연도·면수 등)와 동일한 뮤트 */
+  flex-shrink: 0;
+}
+
+.tag-more {
+  padding: 6px 2px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-light);
+  letter-spacing: 0.04em;    /* 메인 리스트 끝 안내문과 같은 모노 뮤트 톤 */
+}
+@media (hover: hover) and (pointer: fine) {
+  .tag-item:hover { background: var(--hover); }
+  .tag-more:hover { color: var(--text); }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  #header-inner, #filter-bar, #tag-bar, #footer, #setup-notice {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  #search-input { flex: 0 0 100%; }
+}
