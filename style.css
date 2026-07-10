@@ -13,8 +13,8 @@
   --font-body: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
   --font-mono: 'IBM Plex Mono', 'Menlo', monospace;
   /* 종이 겹침 그림자 — 각 칸 경계의 음영 (세기·폭 여기서 조절) */
-  --paper-shade: rgba(0, 0, 0, 0.1);
-  --paper-shade-w: 6px;
+  --paper-shade: rgba(0, 0, 0, 0.07);
+  --paper-shade-w: 8px;
 }
 
 html { scroll-behavior: smooth; }
