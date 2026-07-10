@@ -22,6 +22,10 @@
     <span class="nav-sep">|</span>
     <button class="nav-link" data-view="index">인덱스 보기</button>
   </nav>
+  <!-- 인덱스 뷰에서만 보임: 인덱스 첫 화면(맨 위)으로 -->
+  <div id="index-reset-row">
+    <button id="index-reset">↑ 처음으로</button>
+  </div>
   <!-- ── FILTER BAR ── -->
   <div id="filter-bar">
     <input type="search" id="search-input" placeholder="제목, 저자, 디자이너, 발행처 검색…">
@@ -903,6 +907,12 @@ function bindTagIndexEvents() {
       if (btn.dataset.view === 'index') showTagIndex();
       else showMainView();
     });
+  });
+
+  // 인덱스 "처음으로" — 펼침(더보기) 접고 맨 위로 스크롤 (정렬은 유지)
+  document.getElementById('index-reset').addEventListener('click', () => {
+    buildTagIndex();
+    document.getElementById('tag-index').scrollTop = 0;
   });
 
   // 너비가 바뀌어 열 개수가 달라지면 인덱스 뷰만 재구성 (펼침 상태는 초기화됨)

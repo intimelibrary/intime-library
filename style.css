@@ -20,6 +20,9 @@
 html { scroll-behavior: smooth; }
 
 html, body { overscroll-behavior: none; }
+/* touch-action: manipulation → 아이패드 더블탭 자동확대 방지 (스크롤·핀치줌은 유지) */
+html, body, #table-scroll, #tag-index, .book-row, .cell, .cell-tag,
+.tag-item, .col-header, button, input { touch-action: manipulation; }
 body {
   font-family: var(--font-body);
   background: var(--bg);
@@ -30,6 +33,7 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;  /* 터치 시 회색 깜빡임 제거 */
 }
 
@@ -487,6 +491,27 @@ body {
 .nav-link:hover { color: var(--text); }
 .nav-link.active { color: var(--text); font-weight: 500; }
 .nav-sep { color: var(--border); font-size: 12px; user-select: none; }
+
+/* 인덱스 "처음으로" 버튼 행 — 인덱스 뷰에서만 표시 */
+#index-reset-row {
+  display: none;
+  justify-content: center;
+  padding: 0 32px 10px;
+  background: var(--bg);
+}
+body.view-index #index-reset-row { display: flex; }
+#index-reset {
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+}
+#index-reset:hover { border-color: var(--accent); color: var(--text); }
 
 /* ══════ 인덱스 보기 뷰 ══════ */
 /* 뷰 전환: view-index 클래스에 따라 테이블/인덱스 토글 */
