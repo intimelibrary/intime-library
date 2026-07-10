@@ -14,7 +14,7 @@
   --font-mono: 'IBM Plex Mono', 'Menlo', monospace;
   /* 종이 겹침 그림자 — 각 칸 경계의 음영 (세기·폭 여기서 조절) */
   --paper-shade: rgba(0, 0, 0, 0.12);
-  --paper-shade-w: 14px;
+  --paper-shade-w: 24px;
 }
 
 html { scroll-behavior: smooth; }
