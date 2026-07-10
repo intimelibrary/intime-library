@@ -105,12 +105,13 @@ body {
   overscroll-behavior: none; /* 경계에서 튀는(고무줄) 현상 제거 */
 }
 
-/* ── COLUMN HEADERS (테이블 상단 고정) ── */
+/* ── COLUMN HEADERS (테이블 상단 고정) — 이전 디자인 그대로 ── */
 #col-headers {
   display: grid;
   grid-template-columns: var(--grid-cols);
   width: max-content;
   min-width: 100%;
+  padding: 8px 0;
   border-bottom: 1px solid var(--border);
   background: var(--bg);
   position: sticky;
@@ -121,7 +122,7 @@ body {
 #col-headers .col-header:first-child {
   position: sticky;
   left: 0;
-  z-index: 30;
+  z-index: 21;
   background: var(--bg);
 }
 
@@ -133,14 +134,15 @@ body {
   cursor: pointer;
   user-select: none;
   transition: color 0.1s;
-  padding: 8px 6px 8px 8px;   /* 세로 패딩을 셀에 → 그림자가 헤더 바 전체 높이를 덮음 */
+  padding-right: 6px;
+  padding-left: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  position: relative;
-  background: var(--bg);
+  border-right: 1px solid var(--border-light);
 }
 #col-headers .col-header:first-child { padding-left: 12px; }
+#col-headers .col-header:last-child { border-right: none; }
 
 .col-header:hover { color: var(--text); }
 .col-header.sorted { color: var(--text); }
@@ -172,11 +174,12 @@ body {
   gap: 0;
 }
 
-/* 제목 열 — 가로 스크롤 시 좌측 고정 (그림자 띠는 셀 안에 있어 함께 고정됨) */
+/* 제목 열 — 가로 스크롤 시 좌측 고정 (그림자 띠는 셀 안에 있어 함께 고정됨)
+   z는 상단 고정 헤더(z 20)보다 낮아야 함 — 스크롤 시 헤더가 행을 덮음 */
 .book-row-main .cell:first-child {
   position: sticky;
   left: 0;
-  z-index: 30;
+  z-index: 6;
   background: var(--bg);
   padding-left: 12px;
 }
@@ -197,8 +200,7 @@ body {
 /* 종이 겹침 그림자: 각 칸의 오른쪽 가장자리에 "다음 장이 얹혀 드리운" 음영 띠.
    box-shadow가 아니라 셀 내부에 행 높이 전체로 그려서 세로로 끊김 없이 이어짐.
    경계에서 가장 어둡고 왼쪽으로 갈수록 사라짐 (마지막 열은 없음) */
-.book-row-main .cell:not(:last-child)::after,
-#col-headers .col-header:not(:last-child)::after {
+.book-row-main .cell:not(:last-child)::after {
   content: '';
   position: absolute;
   top: 0;
