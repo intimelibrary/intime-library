@@ -12,6 +12,9 @@
   --hover: #f2f2f2;
   --font-body: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
   --font-mono: 'IBM Plex Mono', 'Menlo', monospace;
+  /* 종이 겹침 그림자 — 각 칸 경계의 음영 (세기·폭 여기서 조절) */
+  --paper-shade: rgba(0, 0, 0, 0.15);
+  --paper-shade-w: 14px;
 }
 
 html { scroll-behavior: smooth; }
@@ -80,27 +83,6 @@ body {
 #search-input:focus { border-color: var(--accent); }
 #search-input::placeholder { color: var(--text-light); }
 
-.filter-select {
-  height: 28px;
-  padding: 0 22px 0 8px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--text);
-  cursor: pointer;
-  outline: none;
-  border-radius: 0;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23aaa'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  transition: border-color 0.15s;
-  max-width: 130px;
-}
-
-.filter-select:focus { border-color: var(--accent); }
-
 #filter-reset {
   height: 28px;
   padding: 0 11px;
@@ -129,7 +111,6 @@ body {
   grid-template-columns: var(--grid-cols);
   width: max-content;
   min-width: 100%;
-  padding: 8px 0;
   border-bottom: 1px solid var(--border);
   background: var(--bg);
   position: sticky;
@@ -140,7 +121,7 @@ body {
 #col-headers .col-header:first-child {
   position: sticky;
   left: 0;
-  z-index: 21;
+  z-index: 30;
   background: var(--bg);
 }
 
@@ -152,15 +133,14 @@ body {
   cursor: pointer;
   user-select: none;
   transition: color 0.1s;
-  padding-right: 6px;
-  padding-left: 8px;
+  padding: 8px 6px 8px 8px;   /* 세로 패딩을 셀에 → 그림자가 헤더 바 전체 높이를 덮음 */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  border-right: 1px solid var(--border-light);
+  position: relative;
+  background: var(--bg);
 }
 #col-headers .col-header:first-child { padding-left: 12px; }
-#col-headers .col-header:last-child { border-right: none; }
 
 .col-header:hover { color: var(--text); }
 .col-header.sorted { color: var(--text); }
@@ -179,8 +159,9 @@ body {
 }
 
 /* hover 음영은 마우스 기기에서만 (터치는 회색 잔상 없이 순백 유지) */
+/* 셀이 불투명한 종이가 되었으므로 모든 셀의 배경을 함께 바꿈 */
 @media (hover: hover) and (pointer: fine) {
-  .book-row:hover { background: var(--hover); }
+  .book-row:hover .cell,
   .book-row:hover .cell:first-child { background: var(--hover); }
 }
 
@@ -191,13 +172,12 @@ body {
   gap: 0;
 }
 
-/* 제목 열 — 가로 스크롤 시 좌측 고정 */
+/* 제목 열 — 가로 스크롤 시 좌측 고정 (그림자 띠는 셀 안에 있어 함께 고정됨) */
 .book-row-main .cell:first-child {
   position: sticky;
   left: 0;
-  z-index: 6;
+  z-index: 30;
   background: var(--bg);
-  border-right: 1px solid var(--border);
   padding-left: 12px;
 }
 
@@ -209,11 +189,25 @@ body {
   position: relative;
   font-size: 12px;
   line-height: 1.5;
-  border-right: 1px solid var(--border-light);
+  background: var(--bg);
   display: flex;
   align-items: center;   /* 행 높이를 채우되 내용은 수직 중앙 */
 }
-.book-row-main .cell:last-child { border-right: none; }
+
+/* 종이 겹침 그림자: 각 칸의 오른쪽 가장자리에 "다음 장이 얹혀 드리운" 음영 띠.
+   box-shadow가 아니라 셀 내부에 행 높이 전체로 그려서 세로로 끊김 없이 이어짐.
+   경계에서 가장 어둡고 왼쪽으로 갈수록 사라짐 (마지막 열은 없음) */
+.book-row-main .cell:not(:last-child)::after,
+#col-headers .col-header:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: var(--paper-shade-w);
+  background: linear-gradient(to right, transparent, var(--paper-shade));
+  pointer-events: none;
+}
 
 .cell-inner {
   display: inline-flex;

@@ -25,15 +25,6 @@
   <!-- ── FILTER BAR ── -->
   <div id="filter-bar">
     <input type="search" id="search-input" placeholder="제목, 저자, 디자이너, 발행처 검색…">
-    <select class="filter-select" id="filter-year" title="연도">
-      <option value="">연도</option>
-    </select>
-    <select class="filter-select" id="filter-type" title="유형">
-      <option value="">유형</option>
-    </select>
-    <select class="filter-select" id="filter-field" title="분야">
-      <option value="">분야</option>
-    </select>
     <button id="filter-reset">초기화</button>
   </div>
   <!-- ── TAG BAR ── -->
@@ -287,7 +278,6 @@ function showConnectionError() {
 // INIT
 // ──────────────────────────────────────────────────────────
 function init() {
-  buildFilterOptions();
   bindEvents();
   bindTagIndexEvents();
   // 초기 정렬 표시: 연도 내림차순
@@ -342,67 +332,12 @@ function bindScrollPause() {
 }
 
 // ──────────────────────────────────────────────────────────
-// FILTER OPTIONS (드롭다운 항목 자동 생성)
-// ──────────────────────────────────────────────────────────
-function buildFilterOptions() {
-  const C = CONFIG.COL;
-
-  // 단일값 필터 드롭다운
-  function populate(selectId, colName) {
-    const sel = document.getElementById(selectId);
-    const values = [...new Set(allBooks.map(b => (b[colName] || '').trim()))]
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b, 'ko'));
-    values.forEach(v => {
-      const opt = document.createElement('option');
-      opt.value = v;
-      opt.textContent = v;
-      sel.appendChild(opt);
-    });
-  }
-
-  // 다중값 필터 드롭다운 — 세미콜론(;)으로 구분된 값을 각각 분리
-  function populateMulti(selectId, colName) {
-    const sel = document.getElementById(selectId);
-    const allVals = allBooks.flatMap(b =>
-      (b[colName] || '').split(';').map(s => s.trim()).filter(Boolean)
-    );
-    const values = [...new Set(allVals)].sort((a, b) => a.localeCompare(b, 'ko'));
-    values.forEach(v => {
-      const opt = document.createElement('option');
-      opt.value = v;
-      opt.textContent = v;
-      sel.appendChild(opt);
-    });
-  }
-
-  // 연도는 역순 정렬
-  const yearSel = document.getElementById('filter-year');
-  const years = [...new Set(allBooks.map(b => (b[C.year] || '').trim()))]
-    .filter(Boolean)
-    .sort((a, b) => b - a);
-  years.forEach(y => {
-    const opt = document.createElement('option');
-    opt.value = y;
-    opt.textContent = y;
-    yearSel.appendChild(opt);
-  });
-
-  populate('filter-type',      C.type);
-  populate('filter-field',     C.field);
-}
-
-// ──────────────────────────────────────────────────────────
 // EVENTS
 // ──────────────────────────────────────────────────────────
 function bindEvents() {
   document.getElementById('search-input').addEventListener('input', debounce(() => {
     applyFilters();
   }, 200));
-
-  ['filter-year','filter-type','filter-field'].forEach(id => {
-    document.getElementById(id).addEventListener('change', () => applyFilters());
-  });
 
   document.getElementById('filter-reset').addEventListener('click', resetFilters);
 
@@ -489,9 +424,6 @@ function closeOpenCell() {
 
 function resetFilters() {
   document.getElementById('search-input').value = '';
-  ['filter-year','filter-type','filter-field'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
   pendingTags = [];
   appliedTags = [];
   renderTagBar();
@@ -505,9 +437,6 @@ function resetFilters() {
 function applyFilters() {
   const C = CONFIG.COL;
   const q = document.getElementById('search-input').value.toLowerCase().trim();
-  const fYear     = document.getElementById('filter-year').value;
-  const fType     = document.getElementById('filter-type').value;
-  const fField    = document.getElementById('filter-field').value;
 
   // 태그 필터 그루핑: 같은 카테고리 OR, 카테고리 간 AND (filter 밖에서 한 번만 계산)
   //  - 값 태그(exact): 세미콜론 분리 후 포함 여부
@@ -522,10 +451,6 @@ function applyFilters() {
   const rangeEntries = Object.entries(rangeByField);
 
   filtered = allBooks.filter(b => {
-    if (fYear     && (b[C.year]  || '').trim() !== fYear)  return false;
-    if (fType     && (b[C.type]  || '').trim() !== fType)  return false;
-    if (fField    && (b[C.field] || '').trim() !== fField) return false;
-
     if (q) {
       const searchable = [
         b[C.title], b[C.author], b[C.editor], b[C.designer],
