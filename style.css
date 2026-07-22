@@ -82,6 +82,7 @@ body {
   gap: 8px;
   width: 100%;
   max-width: 680px;                       /* 검색 라인 너비 축소 */
+  min-height: 42px;                       /* 색인 바(#index-bar)와 밑줄 높이 통일 */
   margin: 4px auto 30px;                  /* 가운데 정렬 + 헤더와 간격 확대 */
   padding: 5px 2px;
   border-bottom: 2px solid var(--text);   /* 시안: 검색 영역 밑줄 — 조금 볼드하게 */
@@ -537,15 +538,21 @@ body {
 .nav-link.active { color: var(--text); font-weight: 700; }  /* 시안: 활성 볼드 */
 .nav-sep { color: var(--border); font-size: 12px; user-select: none; }
 
-/* 인덱스 "처음으로" 버튼 행 — 인덱스 뷰에서만 표시 */
-#index-reset-row {
-  display: none;
-  justify-content: center;
-  padding: 0 32px 10px;
-  background: var(--bg);
+/* 색인 뷰 컨트롤 바 (정렬 + 처음으로) — 검색 바와 같은 박스로 첫 선 높이를 맞춤 */
+#index-bar {
+  display: none;              /* 색인 뷰에서만 flex */
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 680px;
+  min-height: 42px;          /* 검색 바와 동일 → 밑줄 위치 일치 */
+  margin: 4px auto 30px;
+  padding: 5px 2px;
+  border-bottom: 2px solid var(--text);
 }
-body.view-index #index-reset-row { display: flex; }
+body.view-index #index-bar { display: flex; }
 #index-reset {
+  margin-left: auto;         /* 오른쪽 끝 */
   height: 26px;
   padding: 0 12px;
   border: 1px solid var(--border);
@@ -562,8 +569,7 @@ body.view-index #index-reset-row { display: flex; }
 /* 뷰 전환: view-index 클래스에 따라 테이블/인덱스 토글 */
 #tag-index { display: none; }
 body.view-index #table-scroll,
-body.view-index #filter-bar,
-body.view-index #tag-bar { display: none; }
+body.view-index #search-bar { display: none; }   /* 색인 뷰에선 검색 바 숨김 */
 /* 인덱스 뷰 = 세로 스크롤 (가로 스크롤 없음, 밑으로 쭉) */
 body.view-index #tag-index {
   display: block;
@@ -573,18 +579,6 @@ body.view-index #tag-index {
   overscroll-behavior: none;
 }
 
-/* 인덱스 상단 바 (정렬 토글) — 스크롤해도 상단 고정 */
-#tag-index-bar {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 32px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
-}
 #tag-index-label {
   font-size: 10px;
   letter-spacing: 0.06em;
@@ -592,7 +586,7 @@ body.view-index #tag-index {
   color: var(--text-muted);
 }
 
-.sort-toggle { margin-left: auto; display: flex; }
+.sort-toggle { display: flex; }
 .sort-toggle button {
   height: 26px;
   padding: 0 11px;

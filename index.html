@@ -24,8 +24,14 @@
     <button class="nav-link active" data-view="list">목록으로 보기</button>
     <button class="nav-link" data-view="index">색인으로 보기</button>
   </nav>
-  <!-- 인덱스 뷰에서만 보임: 인덱스 첫 화면(맨 위)으로 -->
-  <div id="index-reset-row">
+  <!-- 색인 뷰에서만 보임: 정렬 토글 + 처음으로 (검색 바 자리에 같은 높이로) -->
+  <div id="index-bar">
+    <span id="tag-index-label">정렬</span>
+    <div class="sort-toggle">
+      <button data-sort="count" class="active">빈도순</button>
+      <button data-sort="abc">ㄱ→ㅎ</button>
+      <button data-sort="zyx">ㅎ→ㄱ</button>
+    </div>
     <button id="index-reset">↑ 처음으로</button>
   </div>
   <!-- ── 통합 검색 바 (타이핑 검색 + 태그 칩, 시안대로 하나로) ── -->
@@ -70,16 +76,8 @@
   <div id="list-end"></div>
 </div>
 
-<!-- ── 인덱스 보기 뷰 ── -->
+<!-- ── 색인 보기 뷰 (정렬·처음으로는 헤더의 #index-bar로 이동) ── -->
 <div id="tag-index">
-  <div id="tag-index-bar">
-    <span id="tag-index-label">정렬</span>
-    <div class="sort-toggle">
-      <button data-sort="count" class="active">빈도순</button>
-      <button data-sort="abc">ㄱ→ㅎ</button>
-      <button data-sort="zyx">ㅎ→ㄱ</button>
-    </div>
-  </div>
   <div id="tag-index-body"></div>
 </div>
 
