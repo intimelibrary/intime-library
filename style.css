@@ -73,48 +73,62 @@ body {
   white-space: nowrap;
 }
 
-/* ── SEARCH & FILTER BAR ── */
-#filter-bar {
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  padding: 8px 32px;
+/* ── 통합 검색 바 (시안: 태그 칩 + 타이핑 입력 + 돋보기, 하단 밑줄 하나) ── */
+#search-bar {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  margin: 2px 32px 12px;
+  padding: 5px 2px;
+  border-bottom: 1px solid var(--text);   /* 시안: 검색 영역 밑줄 */
+  cursor: text;                           /* 빈 영역 클릭 → 입력 포커스 */
 }
 
 #search-input {
-  flex: 0 0 240px;
-  height: 28px;
-  padding: 0 9px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--text);
-  outline: none;
-  border-radius: 0;
-  transition: border-color 0.15s;
-}
-
-#search-input:focus { border-color: var(--accent); }
-#search-input::placeholder { color: var(--text-light); }
-
-#filter-reset {
-  height: 28px;
-  padding: 0 11px;
-  border: 1px solid var(--border);
+  flex: 1 1 120px;
+  min-width: 60px;
+  height: 30px;
+  padding: 0 2px;
+  border: none;
   background: transparent;
   font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s;
+  font-size: 14px;
+  letter-spacing: var(--track-ko);
+  color: var(--text);
+  outline: none;
 }
+#search-input::placeholder { color: var(--text-light); }
+/* 브라우저 기본 search 취소버튼 노출(아이패드) */
+#search-input::-webkit-search-cancel-button { -webkit-appearance: none; }
 
-#filter-reset:hover { border-color: var(--accent); color: var(--text); }
+/* 돋보기(태그 검색 적용) 버튼 */
+#search-go {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+#search-go:hover { color: var(--text-muted); }
+
+#filter-reset {
+  flex: 0 0 auto;
+  height: 26px;
+  padding: 0 8px;
+  border: none;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-light);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+#filter-reset:hover { color: var(--text); }
 
 /* ── 2축 스크롤 테이블 컨테이너 ── */
 #table-scroll {
@@ -124,25 +138,26 @@ body {
   overscroll-behavior: none; /* 경계에서 튀는(고무줄) 현상 제거 */
 }
 
-/* ── COLUMN HEADERS (테이블 상단 고정) — 이전 디자인 그대로 ── */
+/* ── COLUMN HEADERS (테이블 상단 고정) ── */
 #col-headers {
   display: grid;
   grid-template-columns: var(--grid-cols);
   width: max-content;
   min-width: 100%;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
   background: var(--bg);
   position: sticky;
   top: 0;
   z-index: 20;
+  /* 밑줄(윗 선)은 각 셀에 → 제목 열만 제외 가능 */
 }
-/* 제목 헤더(좌상단 코너) — 가로/세로 모두 고정 */
+/* 제목 헤더(좌상단 코너) — 가로/세로 모두 고정, 윗 선·사이 선 없음 */
 #col-headers .col-header:first-child {
   position: sticky;
   left: 0;
   z-index: 21;
   background: var(--bg);
+  border-right: none;    /* 사이 선 없음 */
+  border-bottom: none;   /* 윗 선(밑줄) 없음 */
 }
 
 .col-header {
@@ -153,12 +168,12 @@ body {
   cursor: pointer;
   user-select: none;
   transition: color 0.1s;
-  padding-right: 6px;
-  padding-left: 8px;
+  padding: 8px 6px 8px 8px;        /* 세로 패딩을 셀로 → 밑줄이 헤더 바 하단에 정렬 */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   border-right: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border);
 }
 #col-headers .col-header:first-child { padding-left: 12px; }
 #col-headers .col-header:last-child { border-right: none; }
@@ -223,7 +238,8 @@ body {
 /* 종이 겹침 그림자: 각 칸의 오른쪽 가장자리에 "다음 장이 얹혀 드리운" 음영 띠.
    box-shadow가 아니라 셀 내부에 행 높이 전체로 그려서 세로로 끊김 없이 이어짐.
    경계에서 가장 어둡고 왼쪽으로 갈수록 사라짐 (마지막 열은 없음) */
-.book-row-main .cell:not(:last-child)::after {
+/* 제목(첫 열)은 제외 → 고정 제목 열엔 사이 선 없음 */
+.book-row-main .cell:not(:first-child):not(:last-child)::after {
   content: '';
   position: absolute;
   top: 0;
@@ -310,6 +326,8 @@ body {
 }
 .cell-title { font-weight: 500; font-size: 12.5px; }
 .cell-empty { color: var(--text-light); }
+/* 소장 여부(스프레드시트 '소장' 열): 값 없으면 미소장 → 제목 옅은 회색 */
+.book-row.not-held .cell-title { color: var(--text-light); }
 
 /* ── LOADING / EMPTY STATES ── */
 #state-overlay {
@@ -389,24 +407,14 @@ body {
   letter-spacing: 0.03em;
 }
 
-/* ── TAG BAR ── */
+/* ── TAG BAR — 검색 바 안에 인라인으로 칩 나열 ── */
 #tag-bar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  max-height: 0;
-  overflow: hidden;
-  padding: 0 32px;
-  background: var(--bg);
-  border-bottom: 0px solid var(--border);
-  transition: max-height 0.15s ease, padding 0.15s ease, border-bottom-width 0.15s;
 }
-#tag-bar.visible {
-  max-height: 120px;
-  padding: 8px 32px;
-  border-bottom-width: 1px;
-}
+#tag-bar:empty { display: none; }
 
 .tag-bar-label {
   font-size: 10px;
@@ -457,7 +465,8 @@ body {
   background: transparent;
   color: var(--text);
   text-decoration: underline;
-  text-decoration-color: var(--border);
+  text-decoration-style: dotted;      /* 시안: 점선 밑줄 */
+  text-decoration-color: var(--text-muted);
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
   transition: background 0.12s, color 0.12s, text-decoration-color 0.12s;

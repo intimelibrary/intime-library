@@ -31,13 +31,18 @@
   <div id="index-reset-row">
     <button id="index-reset">↑ 처음으로</button>
   </div>
-  <!-- ── FILTER BAR ── -->
-  <div id="filter-bar">
+  <!-- ── 통합 검색 바 (타이핑 검색 + 태그 칩, 시안대로 하나로) ── -->
+  <div id="search-bar">
+    <div id="tag-bar"></div>
     <input type="search" id="search-input" placeholder="제목, 저자, 디자이너, 발행처 검색…">
-    <button id="filter-reset">초기화</button>
+    <button id="filter-reset" title="초기화 (검색·태그 모두 지우기)">초기화</button>
+    <button id="search-go" aria-label="태그 검색 적용" title="태그 검색">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.6"/>
+        <line x1="15.5" y1="15.5" x2="21" y2="21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </button>
   </div>
-  <!-- ── TAG BAR ── -->
-  <div id="tag-bar"></div>
 </header>
 
 <!-- ── 2축 스크롤 테이블 (헤더 상단 고정 · 제목 좌측 고정) ── -->
@@ -350,6 +355,13 @@ function bindEvents() {
 
   document.getElementById('filter-reset').addEventListener('click', resetFilters);
 
+  // 통합 검색 바: 돋보기 = 태그 검색 적용, 빈 영역 클릭 = 타이핑 검색 포커스
+  document.getElementById('search-go').addEventListener('click', applyTagSearch);
+  document.getElementById('search-bar').addEventListener('click', e => {
+    if (e.target.closest('.tag-chip, #search-go, #filter-reset')) return;
+    document.getElementById('search-input').focus();
+  });
+
   document.querySelectorAll('.col-header').forEach(el => {
     el.addEventListener('click', () => {
       const col = el.dataset.col;
@@ -558,6 +570,8 @@ function renderMore() {
     row.dataset.id = book._id;
 
     const v = (col) => (book[C[col]] || '').trim();
+    // 소장 열에 값이 없으면 미소장 → 제목 회색 (.not-held)
+    if (!v('collection')) row.classList.add('not-held');
     const esc = (s) => (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
     // 일반 텍스트 셀 (클릭 불가)
@@ -675,17 +689,9 @@ function updateTagVisuals() {
 }
 
 function renderTagBar() {
+  // 통합 검색 바 안에 태그 칩만 인라인으로 (검색은 돋보기 버튼이 담당)
   const bar = document.getElementById('tag-bar');
   bar.innerHTML = '';
-  if (pendingTags.length === 0) {
-    bar.classList.remove('visible');
-    return;
-  }
-  bar.classList.add('visible');
-  const lbl = document.createElement('span');
-  lbl.className = 'tag-bar-label';
-  lbl.textContent = '태그:';
-  bar.appendChild(lbl);
   pendingTags.forEach(({ field, val }) => {
     const shownVal = field === 'binding' ? (val.replace(/\s*제본/g, '').trim() || val) : val;
     const chip = document.createElement('span');
@@ -697,12 +703,6 @@ function renderTagBar() {
     chip.append(lSpan, vSpan, xSpan);
     bar.appendChild(chip);
   });
-  // 검색 버튼
-  const searchBtn = document.createElement('button');
-  searchBtn.className = 'tag-search-btn';
-  searchBtn.textContent = '검색';
-  searchBtn.addEventListener('click', applyTagSearch);
-  bar.appendChild(searchBtn);
 }
 
 // ──────────────────────────────────────────────────────────
