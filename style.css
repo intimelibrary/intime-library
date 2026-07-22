@@ -164,6 +164,7 @@ body {
 }
 
 .col-header {
+  position: relative;              /* 정렬 화살표(::after) 기준 */
   font-size: 14px;                 /* 시안: 헤더 14pt */
   font-weight: 700;                /* 시안: Apple SD Gothic Neo Bold */
   color: var(--text);             /* 시안: 검정 */
@@ -181,11 +182,20 @@ body {
 #col-headers .col-header:first-child { padding-left: var(--table-pad); }  /* 왼쪽 페이지 여백(고정) */
 
 .col-header:hover { color: var(--text); }
-.col-header.sorted { color: var(--text); }
-.col-header.sorted::after { content: ' ↑'; }
-.col-header.sorted.desc::after { content: ' ↓'; }
+.col-header.sorted { color: var(--text); padding-right: 16px; }  /* 화살표 자리 확보 */
+/* 정렬 화살표: 오른쪽에 절대위치로 고정 → 좁은 열에서도 안 잘림 */
+.col-header.sorted::after {
+  content: '↑';
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  letter-spacing: 0;
+}
+.col-header.sorted.desc::after { content: '↓'; }
 /* 제목 열은 정렬은 되지만 화살표는 생략 (요청) */
-#col-headers .col-header:first-child.sorted::after { content: ''; }
+#col-headers .col-header:first-child.sorted::after { content: none; }
 
 /* ── BOOK LIST (단일 행, 16개 컬럼 가로 스크롤) ── */
 #book-list { width: max-content; min-width: 100%; }
