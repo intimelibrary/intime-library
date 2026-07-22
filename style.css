@@ -167,6 +167,8 @@ body {
 .col-header.sorted { color: var(--text); }
 .col-header.sorted::after { content: ' ↑'; }
 .col-header.sorted.desc::after { content: ' ↓'; }
+/* 제목 열은 정렬은 되지만 화살표는 생략 (요청) */
+#col-headers .col-header:first-child.sorted::after { content: ''; }
 
 /* ── BOOK LIST (단일 행, 16개 컬럼 가로 스크롤) ── */
 #book-list { width: max-content; min-width: 100%; }
