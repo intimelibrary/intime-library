@@ -133,8 +133,8 @@ document.documentElement.style.setProperty(
 let allBooks = [];
 let filtered = [];
 let renderedCount = 0;
-let sortCol = 'year';
-let sortAsc = false;
+let sortCol = 'title';   // 시작 정렬: 제목
+let sortAsc = true;      // 오름차순(↑)
 let pendingTags = []; // 선택됐지만 아직 검색 안 된 태그 {field, val}[]
 let appliedTags = []; // 실제 필터에 적용된 태그 {field, val}[]
 let scrollObserver = null;
@@ -291,9 +291,9 @@ function showConnectionError() {
 function init() {
   bindEvents();
   bindTagIndexEvents();
-  // 초기 정렬 표시: 연도 내림차순
+  // 초기 정렬 표시: 제목 오름차순(↑)
   const initHeader = document.querySelector(`.col-header[data-col="${sortCol}"]`);
-  if (initHeader) { initHeader.classList.add('sorted', 'desc'); }
+  if (initHeader) { initHeader.classList.add('sorted'); if (!sortAsc) initHeader.classList.add('desc'); }
   applyFilters();
   document.getElementById('state-overlay')?.remove();
 
@@ -551,8 +551,10 @@ function renderInitial() {
 
 function renderMore() {
   if (renderedCount >= filtered.length) {
+    // 키워드(타이핑) 검색 중일 땐 "— N권 전체 표시 —" 생략
+    const hasKeyword = document.getElementById('search-input').value.trim() !== '';
     document.getElementById('list-end').textContent =
-      `— ${filtered.length.toLocaleString()}권 전체 표시 —`;
+      hasKeyword ? '' : `— ${filtered.length.toLocaleString()}권 전체 표시 —`;
     return;
   }
   const C = CONFIG.COL;
