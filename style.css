@@ -194,8 +194,6 @@ body {
   letter-spacing: 0;
 }
 .col-header.sorted.desc::after { content: '↓'; }
-/* 제목 열은 정렬은 되지만 화살표는 생략 (요청) */
-#col-headers .col-header:first-child.sorted::after { content: none; }
 
 /* ── BOOK LIST (단일 행, 16개 컬럼 가로 스크롤) ── */
 #book-list { width: max-content; min-width: 100%; }
@@ -514,13 +512,13 @@ body {
   letter-spacing: 0.04em;
 }
 
-/* ── VIEW NAV (제목 아래: 목록으로 보기 / 색인으로 보기) ── */
+/* ── VIEW NAV (맨 위: 목록으로 보기 / 색인으로 보기) ── */
 #view-nav {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 20px;
-  padding: 0 32px 12px;
+  padding: 20px 32px 14px;   /* 제목 제거 → 상단 여백을 내비가 가짐(책 아이콘과 맞춤) */
   background: var(--bg);
 }
 .nav-link {
