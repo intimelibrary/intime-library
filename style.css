@@ -78,9 +78,11 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 2px 32px 12px;
+  width: 100%;
+  max-width: 680px;                       /* 검색 라인 너비 축소 */
+  margin: 4px auto 30px;                  /* 가운데 정렬 + 헤더와 간격 확대 */
   padding: 5px 2px;
-  border-bottom: 1px solid var(--text);   /* 시안: 검색 영역 밑줄 */
+  border-bottom: 2px solid var(--text);   /* 시안: 검색 영역 밑줄 — 조금 볼드하게 */
   cursor: text;                           /* 빈 영역 클릭 → 입력 포커스 */
 }
 
@@ -138,26 +140,24 @@ body {
   overscroll-behavior: none; /* 경계에서 튀는(고무줄) 현상 제거 */
 }
 
-/* ── COLUMN HEADERS (테이블 상단 고정) ── */
+/* ── COLUMN HEADERS (테이블 상단 고정) — 첫 번째 행: 선 없음 ── */
 #col-headers {
   display: grid;
   grid-template-columns: var(--grid-cols);
   width: max-content;
   min-width: 100%;
+  padding: 8px 0;
   background: var(--bg);
   position: sticky;
   top: 0;
   z-index: 20;
-  /* 밑줄(윗 선)은 각 셀에 → 제목 열만 제외 가능 */
 }
-/* 제목 헤더(좌상단 코너) — 가로/세로 모두 고정, 윗 선·사이 선 없음 */
+/* 제목 헤더(좌상단 코너) — 가로/세로 모두 고정 */
 #col-headers .col-header:first-child {
   position: sticky;
   left: 0;
   z-index: 21;
   background: var(--bg);
-  border-right: none;    /* 사이 선 없음 */
-  border-bottom: none;   /* 윗 선(밑줄) 없음 */
 }
 
 .col-header {
@@ -168,15 +168,14 @@ body {
   cursor: pointer;
   user-select: none;
   transition: color 0.1s;
-  padding: 8px 6px 8px 8px;        /* 세로 패딩을 셀로 → 밑줄이 헤더 바 하단에 정렬 */
+  padding-right: 6px;
+  padding-left: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  border-right: 1px solid var(--border-light);
-  border-bottom: 1px solid var(--border);
+  /* 헤더 행에는 세로 구분선·밑줄 없음 */
 }
 #col-headers .col-header:first-child { padding-left: 12px; }
-#col-headers .col-header:last-child { border-right: none; }
 
 .col-header:hover { color: var(--text); }
 .col-header.sorted { color: var(--text); }
@@ -238,8 +237,7 @@ body {
 /* 종이 겹침 그림자: 각 칸의 오른쪽 가장자리에 "다음 장이 얹혀 드리운" 음영 띠.
    box-shadow가 아니라 셀 내부에 행 높이 전체로 그려서 세로로 끊김 없이 이어짐.
    경계에서 가장 어둡고 왼쪽으로 갈수록 사라짐 (마지막 열은 없음) */
-/* 제목(첫 열)은 제외 → 고정 제목 열엔 사이 선 없음 */
-.book-row-main .cell:not(:first-child):not(:last-child)::after {
+.book-row-main .cell:not(:last-child)::after {
   content: '';
   position: absolute;
   top: 0;
