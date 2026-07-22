@@ -17,6 +17,8 @@
   /* 시안 자간(Tc) — 한글 본문 +0.02em, 헤더 +0.03em, 영문·숫자 0 */
   --track-ko: 0.02em;
   --track-head: 0.03em;
+  /* 표 좌우 페이지 여백 (제목 왼쪽=고정, 후원 오른쪽=스크롤 끝에 노출) */
+  --table-pad: 32px;
   /* 종이 겹침 그림자 — 각 칸 경계의 음영 (세기·폭 여기서 조절) */
   --paper-shade: rgba(0, 0, 0, 0.08);
   --paper-shade-w: 20px;
@@ -146,7 +148,7 @@ body {
   grid-template-columns: var(--grid-cols);
   width: max-content;
   min-width: 100%;
-  padding: 8px 0;
+  padding: 8px var(--table-pad) 8px 0;   /* 오른쪽 페이지 여백(스크롤 끝에 노출) */
   background: var(--bg);
   position: sticky;
   top: 0;
@@ -176,7 +178,7 @@ body {
   white-space: nowrap;
   /* 헤더 행에는 세로 구분선·밑줄 없음 */
 }
-#col-headers .col-header:first-child { padding-left: 12px; }
+#col-headers .col-header:first-child { padding-left: var(--table-pad); }  /* 왼쪽 페이지 여백(고정) */
 
 .col-header:hover { color: var(--text); }
 .col-header.sorted { color: var(--text); }
@@ -191,6 +193,7 @@ body {
 .book-row {
   width: max-content;
   min-width: 100%;
+  padding-right: var(--table-pad);   /* 오른쪽 페이지 여백(스크롤 끝에 노출) */
   border-bottom: 1px solid var(--border-light);
   transition: background 0.1s;
   position: relative;
@@ -217,7 +220,7 @@ body {
   left: 0;
   z-index: 6;
   background: var(--bg);
-  padding-left: 12px;
+  padding-left: var(--table-pad);   /* 왼쪽 페이지 여백(고정) */
 }
 
 /* 모든 셀: 고정폭, 넘치면 숨김 → 호버 시 마퀴(흐르는 텍스트) */
