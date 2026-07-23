@@ -627,23 +627,22 @@ body.view-index #tag-index {
 #tag-index-body {
   display: flex;
   align-items: flex-start;
-  gap: 40px;
-  padding: 24px 32px 80px;
+  gap: 48px;
+  padding: 28px var(--table-pad) 80px;   /* 좌우 여백을 목록 뷰와 통일 */
 }
 /* 열 개수는 JS가 너비에 맞춰 생성 (아이패드 세로=3단) */
 .tag-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
 
+/* 시안: 카테고리 사이 구분선 없이 여백으로만 분리 */
 .tag-cat {
-  /* 카테고리와 다음 카테고리 사이에만 구분선 */
-  padding-bottom: 18px;
-  margin-bottom: 18px;
-  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 34px;
 }
 .tag-cat-head {
-  font-size: 12px;
-  font-weight: 700;            /* 카테고리 이름만 볼드로 항목과 구분 */
+  font-size: 14px;             /* 시안: 목록 뷰 컬럼헤더와 동일 크기·굵기 */
+  font-weight: 700;
+  letter-spacing: var(--track-head);
   color: var(--text);
-  margin-bottom: 5px;
+  margin-bottom: 8px;
 }
 .tag-cat-list { display: flex; flex-direction: column; }
 
@@ -651,28 +650,30 @@ body.view-index #tag-index {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  padding: 3px 2px;
+  padding: 4px 0;
   cursor: pointer;
-  font-size: 12px;            /* 메인 셀·태그와 동일 */
-  line-height: 1.5;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: var(--track-ko);
+  line-height: 1.6;
   color: var(--text);
-  /* 항목 사이 구분선 없음 */
 }
-.tag-item-name { word-break: break-word; }
+/* 항목 이름: 숫자·영문(2026, 148×210, PUR…)은 Univers, 한글은 Apple SD Gothic으로 폴백 */
+.tag-item-name { font-family: 'Univers LT Std', var(--font-body); word-break: break-word; }
 .tag-item-count {
   font-family: var(--font-latin);   /* 시안: Univers */
   font-size: 11px;
+  letter-spacing: 0;
   color: var(--text-light);
   flex-shrink: 0;
 }
 
 .tag-more {
-  padding: 6px 2px;
+  padding: 4px 0;
   cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 13px;
+  letter-spacing: var(--track-ko);
   color: var(--text-light);
-  letter-spacing: 0.04em;    /* 메인 리스트 끝 안내문과 같은 모노 뮤트 톤 */
 }
 @media (hover: hover) and (pointer: fine) {
   .tag-item:hover { background: var(--hover); }
