@@ -476,10 +476,13 @@ function applyFilters() {
     }
 
     // 값 태그 필터: 같은 카테고리 OR, 카테고리 간 AND
+    // 가상 필드(finish 등)는 실제 컬럼값을 정규화해서 매칭 → "박"이 표지에 박·자켓에 박… 합집합
     for (const [fieldKey, vals] of exactEntries) {
-      const colName = CONFIG.COL[fieldKey];
+      const vf = VFIELDS[fieldKey];
+      const colName = vf ? CONFIG.COL[vf.col] : CONFIG.COL[fieldKey];
       if (!colName) continue;
-      const parts = (b[colName] || '').split(';').map(s => s.trim());
+      let parts = (b[colName] || '').split(';').map(s => s.trim());
+      if (vf && vf.norm) parts = parts.map(vf.norm);
       if (!vals.some(v => parts.includes(v))) return false;
     }
     // 구간 태그 필터: 숫자값이 선택 구간 중 하나에 들면 통과 [lo, hi)
@@ -647,8 +650,11 @@ function measureRowMarquee(row) {
 const TAG_LABELS = {
   year: '연도', type: '유형', field: '분야', format: '판형', pages: '면수', copies: '부수',
   paper: '종이', printing: '인쇄·후가공', binding: '제본',
-  author: '저자·작가', editor: '기획·편집', photographer: '사진·일러스트',
+  author: '저자·작가', editor: '기획자·편집자', photographer: '사진가·일러스트레이터',
   designer: '디자이너', publisher: '발행처', sponsor: '후원', language: '언어',
+  // 색인 5분할 가상 필드
+  printMethod: '인쇄', finish: '후가공', bindMethod: '제본 방식',
+  coverStyle: '표지 및 결합 방식', accessory: '부속물',
 };
 
 // 태그 클릭 시 pendingTags에 토글 (필터는 즉시 적용 안 함)
@@ -737,6 +743,30 @@ const COPY_BUCKETS = [
   { label: '5,000부 이상',       lo: 5000, hi: null },
 ];
 
+// ── 인쇄 및 후가공 / 제본 컬럼을 시안대로 5개 하위 분류로 (원본 태그는 그대로, 색인에서만 재분류) ──
+// 후가공: 위치 접두어(표지/자켓/내지/케이스/봉투/책등에) 제거 + 표기 통일
+function normalizeFinish(raw) {
+  let b = raw.replace(/^(표지|자켓|내지|케이스|봉투|책등)에\s*/, '').trim();
+  if (b === '실크스크린') b = '실크스크린 인쇄';
+  else if (b === 'UV 출력') b = 'UV 인쇄';
+  else if (b === '스티커') b = '스티커 부착';
+  return b;
+}
+const SUB_PRINT_METHOD = new Set(['오프셋 인쇄','UV 오프셋 인쇄','인디고 출력']);
+const SUB_FINISH = new Set(['박','라미네이팅','코팅','형압','실크스크린 인쇄','에폭시','UV 인쇄','바니시 코팅','CR 코팅','톰슨','UV 코팅','스티커 부착','북클로스','절취선','세양사']);
+const SUB_BIND_METHOD = new Set(['무선 제본','사철 제본','중철 제본','PUR 제본','노출 사철 제본','중철 실 제본','스프링 제본','신문 접지','중철 오메가 제본','사철 PUR 제본','떡 제본','사철 무선 제본','아코디언 제본','노출 무선 제본','고무줄 제본','메모 제본','낱장 인쇄물','케이블타이 제본','접지']);
+const SUB_COVER = new Set(['각양장','둥근양장','오타바인딩','스위스 바인딩','하드커버','부착 표지','여러 책자를 결합','다양한 판형','프렌치 폴딩','테트베쉬 제본','삼중 싸바리']);
+const SUB_ACCESSORY = new Set(['날개','자켓','헤드밴드','삽지','오리꼬미','가름끈','케이스','띠지','스티커','봉투','책갈피','엽서','CD/DVD']);
+
+// 가상 필드 → 실제 컬럼(+정규화). 집계/필터 공용. "박" 클릭 시 표지에 박·자켓에 박… 합집합(정규화 매칭)
+const VFIELDS = {
+  printMethod: { col: 'printing', set: SUB_PRINT_METHOD },
+  finish:      { col: 'printing', set: SUB_FINISH, norm: normalizeFinish },
+  bindMethod:  { col: 'binding',  set: SUB_BIND_METHOD },
+  coverStyle:  { col: 'binding',  set: SUB_COVER },
+  accessory:   { col: 'binding',  set: SUB_ACCESSORY },
+};
+
 // 카테고리 구성 (제목 제외 전부)
 //  mode: 'value'(값 집계·20개에서 접기) | 'range'(구간) | 'all'(전부 표시)
 //  값이 하나도 없는 카테고리(예: 데이터가 비어있는 유형·분야)는 자동으로 숨김
@@ -748,8 +778,11 @@ const TAG_INDEX_CATS = [
   { key: 'pages',        label: '면수',                 mode: 'range', buckets: PAGE_BUCKETS },
   { key: 'copies',       label: '부수',                 mode: 'range', buckets: COPY_BUCKETS },
   { key: 'paper',        label: '종이',                 mode: 'value' },
-  { key: 'printing',     label: '인쇄 및 후가공',        mode: 'value' },
-  { key: 'binding',      label: '제본',                 mode: 'value' },
+  { key: 'printMethod',  label: '인쇄',                 mode: 'sub' },
+  { key: 'finish',       label: '후가공',               mode: 'sub' },
+  { key: 'bindMethod',   label: '제본 방식',            mode: 'sub' },
+  { key: 'coverStyle',   label: '표지 및 결합 방식',     mode: 'sub' },
+  { key: 'accessory',    label: '부속물',               mode: 'sub' },
   { key: 'author',       label: '저자·작가',            mode: 'value' },
   { key: 'editor',       label: '기획자·편집자',         mode: 'value' },
   { key: 'photographer', label: '사진가·일러스트레이터',  mode: 'value' },
@@ -764,6 +797,19 @@ function tallyField(colName) {
   allBooks.forEach(b => {
     (b[colName] || '').split(';').map(s => s.trim()).filter(Boolean).forEach(v => {
       map.set(v, (map.get(v) || 0) + 1);
+    });
+  });
+  return [...map.entries()].map(([val, count]) => ({ val, count }));
+}
+
+// 가상 필드(5분할) 집계 — 컬럼값을 정규화한 뒤 화이트리스트에 든 것만 집계
+function subTally(vf) {
+  const colName = CONFIG.COL[vf.col];
+  const map = new Map();
+  allBooks.forEach(b => {
+    (b[colName] || '').split(';').map(s => s.trim()).filter(Boolean).forEach(raw => {
+      const v = vf.norm ? vf.norm(raw) : raw;
+      if (vf.set.has(v)) map.set(v, (map.get(v) || 0) + 1);
     });
   });
   return [...map.entries()].map(([val, count]) => ({ val, count }));
@@ -829,7 +875,8 @@ function renderCategoryBlock(cat) {
     isRange = true;
     visible = bucketCounts(CONFIG.COL[cat.key], cat.buckets);   // 구간은 항상 자연순, 접기 없음
   } else {
-    let items = tallyField(CONFIG.COL[cat.key]);
+    // 'sub'(가상 필드): 컬럼값을 정규화/화이트리스트로 재분류 집계 / 그 외: 원본 컬럼 집계
+    let items = cat.mode === 'sub' ? subTally(VFIELDS[cat.key]) : tallyField(CONFIG.COL[cat.key]);
     if (cat.transform) items = items.map(it => ({ ...it, disp: cat.transform(it.val) }));
     items = sortTagItems(items);
     if (cat.mode === 'all') {
