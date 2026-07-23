@@ -387,6 +387,11 @@ function bindEvents() {
     const inner = cell.firstElementChild;
     const overflows = inner && (inner.scrollWidth - cell.clientWidth > 4);
     if (overflows) { openCell(cell); return; }
+    // 3-1) 제목 셀: 청구기호가 있으면 넘치지 않아도 팝오버(전체 제목+청구기호)
+    if (cell.classList.contains('cell-title') &&
+        cell.closest('.book-row')?.classList.contains('has-callno')) {
+      openCell(cell); return;
+    }
     // 4) 안 넘치는 셀의 태그 → pendingTags에 토글
     const tagEl = e.target.closest('.cell-tag');
     if (tagEl && tagEl.dataset.val) togglePendingTag(tagEl.dataset.field, tagEl.dataset.val);
@@ -583,6 +588,8 @@ function renderMore() {
     const v = (col) => (book[C[col]] || '').trim();
     // 소장 열에 값이 없으면 미소장 → 제목 회색 (.not-held)
     if (!v('collection')) row.classList.add('not-held');
+    // 청구기호가 있으면 제목 클릭 시 팝오버(전체 제목+청구기호) 가능
+    if (v('callNo')) row.classList.add('has-callno');
     const esc = (s) => (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
     // 일반 텍스트 셀 (클릭 불가)

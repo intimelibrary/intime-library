@@ -301,6 +301,8 @@ body {
 
 /* 흐르는 셀은 셀 전체가 "펼치기" 버튼 — 내부 태그는 클릭/호버 비활성 */
 .cell.marquee { cursor: pointer; }
+/* 청구기호 있는 책의 제목은 항상 클릭 가능(팝오버) */
+.book-row.has-callno .cell-title { cursor: pointer; }
 .cell.marquee .cell-tag {
   pointer-events: none;
   cursor: pointer;
