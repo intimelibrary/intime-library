@@ -1,5 +1,21 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* 시안 원본 영문·숫자 폰트 — Univers LT Std (사용자 제공 라이선스 폰트) */
+@font-face {
+  font-family: 'Univers LT Std';
+  src: url('./fonts/UniversLTStd.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Univers LT Std';
+  src: url('./fonts/UniversLTStd-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg: #ffffff;
   --surface: #ffffff;
@@ -12,7 +28,7 @@
   --hover: #f2f2f2;
   /* 시안(웹 시안_0720) 폰트 — 한글: Apple SD Gothic Neo(아이패드 네이티브), 영문·숫자: Univers 대체 Helvetica Neue */
   --font-body: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-  --font-latin: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-latin: 'Univers LT Std', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-mono: 'IBM Plex Mono', 'Menlo', monospace;
   /* 시안 자간(Tc) — 한글 본문 +0.02em, 헤더 +0.03em, 영문·숫자 0 */
   --track-ko: 0.02em;
@@ -644,9 +660,9 @@ body.view-index #tag-index {
 }
 .tag-item-name { word-break: break-word; }
 .tag-item-count {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-muted);  /* 메인 숫자(연도·면수 등)와 동일한 뮤트 */
+  font-family: var(--font-latin);   /* 시안: Univers */
+  font-size: 11px;
+  color: var(--text-light);
   flex-shrink: 0;
 }
 
