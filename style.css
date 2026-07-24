@@ -170,7 +170,16 @@ body {
   position: sticky;
   top: 0;
   z-index: 20;
-  border-bottom: 1px solid var(--border-light);  /* 데이터 행 사이 선과 동일 */
+}
+/* 헤더↔첫 행 구분선 — 왼쪽 페이지 여백만큼 안쪽에서 시작 */
+#col-headers::after {
+  content: '';
+  position: absolute;
+  left: var(--table-pad);
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--border-light);
 }
 /* 제목 헤더(좌상단 코너) — 가로/세로 모두 고정 */
 #col-headers .col-header:first-child {
@@ -219,9 +228,19 @@ body {
   width: max-content;
   min-width: 100%;
   padding-right: var(--table-pad);   /* 오른쪽 페이지 여백(스크롤 끝에 노출) */
-  border-bottom: 1px solid var(--border-light);
   transition: background 0.1s;
   position: relative;
+}
+/* 행 구분선 — 왼쪽 페이지 여백만큼 안쪽에서 시작 */
+.book-row::after {
+  content: '';
+  position: absolute;
+  left: var(--table-pad);
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--border-light);
+  pointer-events: none;
 }
 
 /* hover 음영은 마우스 기기에서만 (터치는 회색 잔상 없이 순백 유지) */
@@ -350,7 +369,7 @@ body {
 /* 펼침 대상 셀은 강조(밑줄)로 어떤 셀이 열렸는지 표시 */
 .cell.open { color: var(--text); }
 
-/* 숫자·영문 열(연도·판형·면수·부수) — 시안: Univers 대체 Helvetica Neue, 13pt, 자간 0, 검정 */
+/* 숫자·영문 열(연도·판형·면수·부수) — Univers, 13pt, 자간 0, 검정 */
 .cell-year, .cell-format, .cell-pages, .cell-copies {
   font-family: var(--font-latin);
   font-weight: 400;
@@ -358,6 +377,11 @@ body {
   letter-spacing: 0;
   color: var(--text);
 }
+/* 연도·판형·면수: 좁은 열에 딱 맞게 중앙정렬 (셀·헤더 모두) */
+.cell-year, .cell-format, .cell-pages { justify-content: center; }
+#col-headers .col-header[data-col="year"],
+#col-headers .col-header[data-col="format"],
+#col-headers .col-header[data-col="pages"] { text-align: center; }
 .cell-title { font-weight: 500; font-size: 12.5px; }
 .cell-empty { color: var(--text-light); }
 /* 소장 여부(스프레드시트 '소장' 열): 값 없으면 미소장 → 제목 옅은 회색 */
@@ -561,32 +585,33 @@ body {
 .nav-link.active { color: var(--text); font-weight: 700; }  /* 시안: 활성 볼드 */
 .nav-sep { color: var(--border); font-size: 12px; user-select: none; }
 
-/* 색인 뷰 컨트롤 바 (정렬 + 처음으로) — 검색 바와 같은 박스로 첫 선 높이를 맞춤 */
+/* 색인 뷰 컨트롤 바 (정렬 + 처음으로) — 얇고 미니멀하게 */
 #index-bar {
   display: none;              /* 색인 뷰에서만 flex */
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   max-width: 680px;
-  min-height: 42px;          /* 검색 바와 동일 → 밑줄 위치 일치 */
-  margin: 4px auto 30px;
-  padding: 5px 2px;
-  border-bottom: 2px solid var(--text);
+  min-height: 32px;
+  margin: 4px auto 26px;
+  padding: 4px 2px;
+  border-bottom: 1px solid var(--border);
 }
 body.view-index #index-bar { display: flex; }
 #index-reset {
   margin-left: auto;         /* 오른쪽 끝 */
-  height: 26px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  background: transparent;
+  height: 22px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 3px;
+  background: var(--hover);
   font-family: var(--font-body);
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--text-light);
   cursor: pointer;
-  transition: border-color 0.12s, color 0.12s;
+  transition: color 0.12s;
 }
-#index-reset:hover { border-color: var(--accent); color: var(--text); }
+#index-reset:hover { color: var(--text); }
 
 /* ══════ 인덱스 보기 뷰 ══════ */
 /* 뷰 전환: view-index 클래스에 따라 테이블/인덱스 토글 */
@@ -609,31 +634,30 @@ body.view-index #tag-index {
   color: var(--text-muted);
 }
 
-.sort-toggle { display: flex; }
+/* 정렬 토글 — 미니멀: 연회색 박스에 옅은 텍스트, 활성 시 검은 텍스트 */
+.sort-toggle { display: flex; gap: 4px; }
 .sort-toggle button {
-  height: 26px;
-  padding: 0 11px;
-  border: 1px solid var(--border);
-  background: var(--surface);
+  height: 22px;
+  min-width: 22px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 3px;
+  background: var(--hover);
   font-family: var(--font-body);
   font-size: 11px;
-  color: var(--text-muted);
+  line-height: 1;
+  color: var(--text-light);
   cursor: pointer;
-  margin-left: -1px;   /* 세그먼트 경계 겹침 */
-  transition: background 0.12s, color 0.12s;
+  transition: color 0.12s;
 }
-.sort-toggle button:hover { color: var(--text); }
-.sort-toggle button.active {
-  background: var(--text);
-  color: var(--bg);
-  border-color: var(--text);
-  z-index: 1;
-}
+.sort-toggle button:hover { color: var(--text-muted); }
+.sort-toggle button.active { color: var(--text); }   /* 활성 = 검은 텍스트 */
 
 /* 인덱스 본문: 독립 flex 열 — 한 열을 펼쳐도 다른 열은 고정, 그 열만 아래로 늘어남 */
 #tag-index-body {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;        /* 열 높이를 통일 → 열 그림자가 화면 끝까지 이어짐 */
+  min-height: 100%;            /* 내용이 짧아도 화면 아래까지 채움 */
   gap: 48px;
   padding: 28px var(--table-pad) 80px;   /* 좌우 여백을 목록 뷰와 통일 */
 }
@@ -668,12 +692,12 @@ body.view-index #tag-index {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  padding: 4px 0;
+  padding: 2px 0;              /* 시안: 행간 살짝 축소 */
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: var(--track-ko);
-  line-height: 1.6;
+  line-height: 1.45;
   color: var(--text);
 }
 /* 항목 이름: 숫자·영문(2026, 148×210, PUR…)은 Univers, 한글은 Apple SD Gothic으로 폴백 */
@@ -687,7 +711,7 @@ body.view-index #tag-index {
 }
 
 .tag-more {
-  padding: 4px 0;
+  padding: 3px 0;
   cursor: pointer;
   font-size: 13px;
   letter-spacing: var(--track-ko);

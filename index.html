@@ -29,8 +29,8 @@
     <span id="tag-index-label">정렬</span>
     <div class="sort-toggle">
       <button data-sort="count" class="active">빈도순</button>
-      <button data-sort="abc">ㄱ→ㅎ</button>
-      <button data-sort="zyx">ㅎ→ㄱ</button>
+      <button data-sort="abc" title="가나다 오름차순" aria-label="가나다 오름차순">↑</button>
+      <button data-sort="zyx" title="가나다 내림차순" aria-label="가나다 내림차순">↓</button>
     </div>
     <button id="index-reset">↑ 처음으로</button>
   </div>
@@ -122,7 +122,7 @@ const CONFIG = {
 document.documentElement.style.setProperty(
   '--grid-cols',
   // 연도~제본 너비는 시안 실측 반영, 이후 열은 기존 유지
-  '300px 72px 100px 78px 160px 190px 250px 250px 220px 64px 200px 180px 170px 170px 200px 220px'
+  '300px 56px 88px 60px 160px 190px 250px 250px 220px 64px 200px 180px 170px 170px 200px 220px'
 );
 
 // ──────────────────────────────────────────────────────────
@@ -411,7 +411,9 @@ function bindEvents() {
 function openCell(cell) {
   closeOpenCell();
   const row = cell.closest('.book-row');
-  const left = cell.getBoundingClientRect().left - row.getBoundingClientRect().left;
+  // 셀 왼쪽 패딩(제목=32px 여백)만큼 더해 텍스트 시작 지점에 팝오버가 뜨게
+  const padL = parseFloat(getComputedStyle(cell).paddingLeft) || 0;
+  const left = cell.getBoundingClientRect().left - row.getBoundingClientRect().left + padL;
 
   const pop = document.createElement('div');
   pop.className = 'cell-popover';
@@ -946,7 +948,7 @@ function makeTagItem(field, it, isRange) {
   nameSpan.textContent = it.disp != null ? it.disp : (it.label != null ? it.label : it.val);
   const cntSpan = document.createElement('span');
   cntSpan.className = 'tag-item-count';
-  cntSpan.textContent = '(' + it.count + ')';
+  cntSpan.textContent = it.count;
   el.append(nameSpan, cntSpan);
   return el;
 }
