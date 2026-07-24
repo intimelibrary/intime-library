@@ -305,20 +305,7 @@ body {
   white-space: nowrap;
 }
 
-/* 넘치는 셀은 렌더 시 JS가 .marquee 부여(클릭 판정·펼치기용) */
-/* 제목 열은 애니메이션 없음 — 넘치면 잘린 채 표시, 클릭 시 전체 제목+청구기호 팝오버 */
-/* 데스크톱(마우스)에서는 제목 외 열만 흐름 — 보이는 행(.in-view)만 */
-@media (hover: hover) and (pointer: fine) {
-  .book-row.in-view .cell.marquee:not(.cell-title) .cell-inner {
-    animation: marquee var(--mq-dur, 4s) linear infinite alternate;
-  }
-}
-/* 스크롤 중에는 마퀴 일시정지 → 스크롤이 매끄러움 (모든 기기 공통) */
-#table-scroll.scrolling .cell-inner { animation-play-state: paused !important; }
-@keyframes marquee {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(var(--mq, 0)); }
-}
+/* 넘치는 셀은 흐름(마퀴) 없이 그대로 잘린 채 표시 — 클릭 시 펼침(팝오버) */
 
 /* 흐르는 셀은 셀 전체가 "펼치기" 버튼 — 내부 태그는 클릭/호버 비활성 */
 .cell.marquee { cursor: pointer; }
@@ -587,13 +574,13 @@ body {
 .nav-link.active { color: var(--text); font-weight: 700; }  /* 시안: 활성 볼드 */
 .nav-sep { color: var(--border); font-size: 12px; user-select: none; }
 
-/* 색인 뷰 컨트롤 바 (정렬 + 처음으로) — 버튼 그룹만 좌측에, 밑줄 없음 */
+/* 색인 뷰 컨트롤 바 (정렬 + 처음으로) — 버튼 그룹 중앙 정렬, 밑줄 없음 */
 #index-bar {
   display: none;              /* 색인 뷰에서만 flex */
   align-items: center;
+  justify-content: center;   /* 그룹을 가운데로 */
   gap: 8px;
   width: 100%;
-  max-width: 680px;
   margin: 4px auto 26px;
   padding: 2px;
 }
