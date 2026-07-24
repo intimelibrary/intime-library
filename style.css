@@ -180,6 +180,7 @@ body {
   bottom: 0;
   height: 1px;
   background: var(--border-light);
+  z-index: 22;   /* 고정 제목 헤더(z 21) 위 → 제목 열 아래에도 선이 보이게 */
 }
 /* 제목 헤더(좌상단 코너) — 가로/세로 모두 고정 */
 #col-headers .col-header:first-child {
@@ -241,6 +242,7 @@ body {
   height: 1px;
   background: var(--border-light);
   pointer-events: none;
+  z-index: 7;   /* 고정 제목 셀(z 6) 위 → 제목 열 아래에도 선이 보이게 */
 }
 
 /* hover 음영은 마우스 기기에서만 (터치는 회색 잔상 없이 순백 유지) */
@@ -585,28 +587,25 @@ body {
 .nav-link.active { color: var(--text); font-weight: 700; }  /* 시안: 활성 볼드 */
 .nav-sep { color: var(--border); font-size: 12px; user-select: none; }
 
-/* 색인 뷰 컨트롤 바 (정렬 + 처음으로) — 얇고 미니멀하게 */
+/* 색인 뷰 컨트롤 바 (정렬 + 처음으로) — 버튼 그룹만 좌측에, 밑줄 없음 */
 #index-bar {
   display: none;              /* 색인 뷰에서만 flex */
   align-items: center;
   gap: 8px;
   width: 100%;
   max-width: 680px;
-  min-height: 32px;
   margin: 4px auto 26px;
-  padding: 4px 2px;
-  border-bottom: 1px solid var(--border);
+  padding: 2px;
 }
 body.view-index #index-bar { display: flex; }
 #index-reset {
-  margin-left: auto;         /* 오른쪽 끝 */
-  height: 22px;
-  padding: 0 8px;
+  height: 28px;
+  padding: 0 13px;
   border: none;
-  border-radius: 3px;
+  border-radius: 4px;
   background: var(--hover);
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-light);
   cursor: pointer;
   transition: color 0.12s;
@@ -635,16 +634,16 @@ body.view-index #tag-index {
 }
 
 /* 정렬 토글 — 미니멀: 연회색 박스에 옅은 텍스트, 활성 시 검은 텍스트 */
-.sort-toggle { display: flex; gap: 4px; }
+.sort-toggle { display: flex; gap: 8px; }
 .sort-toggle button {
-  height: 22px;
-  min-width: 22px;
-  padding: 0 8px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 13px;
   border: none;
-  border-radius: 3px;
+  border-radius: 4px;
   background: var(--hover);
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
   color: var(--text-light);
   cursor: pointer;
