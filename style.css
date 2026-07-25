@@ -26,8 +26,14 @@
   --border-light: #e6e6e6;
   --accent: #000000;
   --hover: #f2f2f2;
-  /* 시안(웹 시안_0720) 폰트 — 한글: Apple SD Gothic Neo(아이패드 네이티브), 영문·숫자: Univers 대체 Helvetica Neue */
-  --font-body: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  /* 인디자인 합성 글꼴의 웹 구현 — 브라우저는 글자마다 스택을 앞에서부터 훑어
+     글리프가 있는 첫 폰트를 쓴다. Univers에는 한글이 없으므로:
+       라틴·숫자·구두점·기호 → Univers LT Std (인디자인 55 Roman에 해당)
+       한글                  → Apple SD Gothic Neo
+     즉 스택 순서만으로 합성 글꼴과 같은 글자별 폰트 분리가 이뤄진다.
+     (한글 Medium 500 / 라틴 Roman 400 도 자동으로 맞음 — Univers에 500이 없어
+      CSS 폰트 매칭이 400을 고름) */
+  --font-body: 'Univers LT Std', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
   --font-latin: 'Univers LT Std', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-mono: 'IBM Plex Mono', 'Menlo', monospace;
   /* 시안 자간(Tc) — 한글 본문 +0.02em, 헤더 +0.03em, 영문·숫자 0 */
@@ -36,8 +42,8 @@
   /* 표 좌우 페이지 여백 (제목 왼쪽=고정, 후원 오른쪽=스크롤 끝에 노출) */
   --table-pad: 32px;
   /* 종이 겹침 그림자 — 각 칸 경계의 음영 (세기·폭 여기서 조절) */
-  --paper-shade: rgba(0, 0, 0, 0.08);
-  --paper-shade-w: 10px;
+  --paper-shade: rgba(0, 0, 0, 0.05);
+  --paper-shade-w: 8px;
 
   /* ══ 색인 뷰 리듬 — 행간·자간·간격은 전부 여기서 조절 ══
      아래 8개 값만 바꾸면 색인 페이지 전체 리듬이 한 번에 따라옵니다.
@@ -116,7 +122,7 @@ body {
   gap: 5px;
   width: 100%;
   max-width: 680px;                       /* 검색 라인 너비 축소 */
-  min-height: 42px;                       /* 색인 바(#index-bar)와 밑줄 높이 통일 */
+  min-height: 42px;
   margin: 40px auto 70px;                  /* 가운데 정렬 + 헤더와 간격 확대 */
   padding: 5px 2px;
   border-bottom: 1px solid var(--text);   /* 시안: 검색 영역 밑줄 — 조금 볼드하게 */
@@ -290,7 +296,9 @@ body {
 /* 모든 셀: 고정폭, 넘치면 숨김 → 호버 시 마퀴(흐르는 텍스트) */
 .cell {
   min-width: 0;
-  padding: 8px;          /* 세로 패딩을 셀로 옮겨 고정 제목 셀이 행 전체를 덮게 */
+  /* 세로 패딩을 셀로 옮겨 고정 제목 셀이 행 전체를 덮게.
+     세로 6.5px = 시안 행 높이 33.7px에 맞춤 (12.5px x 1.6 행간 + 6.5x2 + 구분선 1px) */
+  padding: 6.5px 8px;
   overflow: hidden;
   position: relative;
   font-size: 12.5px;               /* 시안: 본문 12.5pt */
@@ -417,11 +425,11 @@ body {
   letter-spacing: 0;
   color: var(--text);
 }
-/* 연도·판형·면수: 좁은 열에 딱 맞게 중앙정렬 (셀·헤더 모두) */
-.cell-year, .cell-format, .cell-pages { justify-content: center; }
+/* 연도·판형·면수: 시안대로 왼쪽 정렬 (셀·헤더 모두 — 다른 열과 같은 기준선) */
+.cell-year, .cell-format, .cell-pages { justify-content: flex-start; }
 #col-headers .col-header[data-col="year"],
 #col-headers .col-header[data-col="format"],
-#col-headers .col-header[data-col="pages"] { text-align: center; }
+#col-headers .col-header[data-col="pages"] { text-align: left; }
 .cell-title { font-weight: 500; font-size: 12.5px; }
 .cell-empty { color: var(--text-light); }
 /* 소장 여부(스프레드시트 '소장' 열): 값 없으면 미소장 → 제목 옅은 회색 */
@@ -481,13 +489,10 @@ body {
 #setup-notice li { margin-bottom: 6px; }
 
 /* ── INFINITE SCROLL SENTINEL ── */
+/* 무한 스크롤 감지용 센티널 — 표시 문구 없이 목록 끝 여백만 담당
+   (IntersectionObserver 대상이라 div 자체는 남겨둬야 함) */
 #list-end {
-  padding: 32px;
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-light);
-  letter-spacing: 0.06em;
+  height: 24px;
 }
 
 /* ── FOOTER ── */
@@ -625,31 +630,6 @@ body {
 .nav-link.active { color: var(--text); font-weight: 700; }  /* 시안: 활성 볼드 */
 .nav-sep { color: var(--border); font-size: 12px; user-select: none; }
 
-/* 색인 뷰 컨트롤 바 (정렬 + 처음으로) — 버튼 그룹 중앙 정렬, 밑줄 없음 */
-#index-bar {
-  display: none;              /* 색인 뷰에서만 flex */
-  align-items: center;
-  justify-content: center;   /* 그룹을 가운데로 */
-  gap: 8px;
-  width: 100%;
-  margin: 40px auto 15px;
-  padding: 2px;
-}
-body.view-index #index-bar { display: flex; }
-#index-reset {
-  height: 28px;
-  padding: 0 13px;
-  border: none;
-  border-radius: 4px;
-  background: var(--hover);
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--text-light);
-  cursor: pointer;
-  transition: color 0.12s;
-}
-#index-reset:hover { color: var(--text); }
-
 /* ══════ 인덱스 보기 뷰 ══════ */
 /* 뷰 전환: view-index 클래스에 따라 테이블/인덱스 토글 */
 #tag-index { display: none; }
@@ -671,32 +651,15 @@ body.view-index #tag-index {
   color: var(--text-muted);
 }
 
-/* 정렬 토글 — 미니멀: 연회색 박스에 옅은 텍스트, 활성 시 검은 텍스트 */
-.sort-toggle { display: flex; gap: 8px; }
-.sort-toggle button {
-  height: 28px;
-  min-width: 28px;
-  padding: 0 13px;
-  border: none;
-  border-radius: 4px;
-  background: var(--hover);
-  font-family: var(--font-body);
-  font-size: 12px;
-  line-height: 1;
-  color: var(--text-light);
-  cursor: pointer;
-  transition: color 0.12s;
-}
-.sort-toggle button:hover { color: var(--text-muted); }
-.sort-toggle button.active { color: var(--text); }   /* 활성 = 검은 텍스트 */
-
 /* 인덱스 본문: 독립 flex 열 — 한 열을 펼쳐도 다른 열은 고정, 그 열만 아래로 늘어남 */
 #tag-index-body {
   display: flex;
   align-items: stretch;        /* 열 높이를 통일 → 열 그림자가 화면 끝까지 이어짐 */
   min-height: 100%;            /* 내용이 짧아도 화면 아래까지 채움 */
   gap: var(--idx-col-gap);
-  padding: 28px var(--table-pad) 80px;   /* 좌우 여백을 목록 뷰와 통일 */
+  /* 상단 76px — 정렬 바를 없앤 뒤 시안의 '내비 ↔ 첫 카테고리' 간격(111px)에 맞춤
+     (시안 이미지 배율 1.465는 열 끝 위치·항목 행간 두 방법으로 교차 검증) */
+  padding: 76px var(--table-pad) 80px;   /* 좌우 여백을 목록 뷰와 통일 */
 }
 /* 열 개수는 JS가 너비에 맞춰 생성 (12.9 가로=6단 / 세로=3단) */
 .tag-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; position: relative; }
