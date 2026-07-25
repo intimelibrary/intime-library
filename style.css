@@ -360,17 +360,50 @@ body {
   transform: translateY(-50%) scale(1);
   pointer-events: auto;
 }
+
+/* 제목 열 팝오버 전용 레이어 — 행 전체를 덮되 레이아웃·클릭엔 영향 없음.
+   이 안의 팝오버를 position:sticky로 두면 좌측 고정된 제목 열을 브라우저가
+   직접 따라붙여 준다. (스크롤 이벤트로 JS가 좌표를 갱신하면 스크롤이 그려진
+   뒤에 실행돼 한 프레임씩 늦어 떨림이 생김) */
+.popover-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;   /* sticky는 top을 오프셋이 아닌 기준선으로 쓰므로 세로 정렬은 여기서 */
+  pointer-events: none;
+  z-index: 50;
+}
+/* 레이어 안에서는 sticky + flex 정렬이므로 top/translateY 방식의 중앙 정렬을 해제 */
+.popover-layer .cell-popover {
+  position: sticky;
+  top: auto;
+  transform: scale(0.96);
+}
+.popover-layer .cell-popover.visible { transform: scale(1); }
 .cell-popover .popover-text {
   font-size: 11px;
   white-space: normal;
   word-break: break-word;
 }
-/* 제목 팝오버에 함께 표시되는 청구기호 — Univers·뮤트 */
+/* 제목 팝오버에 함께 표시되는 청구기호 — 팝오버를 여는 주된 이유이므로 가장 또렷하게.
+   회색(#777)이라 제목 끝에 묻히던 것을 검정·볼드로 올림.
+   flex-basis 100%로 항상 자체 줄을 차지 — 제목이 감기든 말든 늘 같은 자리에 오고,
+   인라인일 때 제목 둘째 줄 앞에 세로선이 끼어 보이던 문제도 없앰 */
 .cell-popover .popover-callno {
+  flex: 0 0 100%;
+  /* 구분선 위아래 여백 맞추기: 위쪽엔 팝오버의 flex gap(4px)이 이미 붙으므로
+     margin-top은 5-4=1px만 줘야 padding-top(5px)과 시각적으로 같아짐 */
+  margin-top: 1px;
+  padding-top: 5px;
+  border-top: 1px solid var(--border-light);
   font-family: var(--font-latin);
   font-size: 11px;
-  letter-spacing: 0;
-  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.04em;      /* 8자리 코드가 뭉치지 않게 살짝 벌림 */
+  color: var(--text);
   white-space: nowrap;
 }
 /* 펼침 대상 셀은 강조(밑줄)로 어떤 셀이 열렸는지 표시 */
