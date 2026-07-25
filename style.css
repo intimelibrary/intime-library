@@ -37,7 +37,7 @@
   --table-pad: 32px;
   /* 종이 겹침 그림자 — 각 칸 경계의 음영 (세기·폭 여기서 조절) */
   --paper-shade: rgba(0, 0, 0, 0.08);
-  --paper-shade-w: 20px;
+  --paper-shade-w: 10px;
 
   /* ══ 색인 뷰 리듬 — 행간·자간·간격은 전부 여기서 조절 ══
      아래 8개 값만 바꾸면 색인 페이지 전체 리듬이 한 번에 따라옵니다.
@@ -113,13 +113,13 @@ body {
 #search-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
   width: 100%;
   max-width: 680px;                       /* 검색 라인 너비 축소 */
   min-height: 42px;                       /* 색인 바(#index-bar)와 밑줄 높이 통일 */
-  margin: 4px auto 30px;                  /* 가운데 정렬 + 헤더와 간격 확대 */
+  margin: 40px auto 70px;                  /* 가운데 정렬 + 헤더와 간격 확대 */
   padding: 5px 2px;
-  border-bottom: 2px solid var(--text);   /* 시안: 검색 영역 밑줄 — 조금 볼드하게 */
+  border-bottom: 1px solid var(--text);   /* 시안: 검색 영역 밑줄 — 조금 볼드하게 */
   cursor: text;                           /* 빈 영역 클릭 → 입력 포커스 */
 }
 
@@ -632,7 +632,7 @@ body {
   justify-content: center;   /* 그룹을 가운데로 */
   gap: 8px;
   width: 100%;
-  margin: 4px auto 26px;
+  margin: 40px auto 15px;
   padding: 2px;
 }
 body.view-index #index-bar { display: flex; }
@@ -698,7 +698,7 @@ body.view-index #tag-index {
   gap: var(--idx-col-gap);
   padding: 28px var(--table-pad) 80px;   /* 좌우 여백을 목록 뷰와 통일 */
 }
-/* 열 개수는 JS가 너비에 맞춰 생성 (12.9 가로=5단 / 세로=3단) */
+/* 열 개수는 JS가 너비에 맞춰 생성 (12.9 가로=6단 / 세로=3단) */
 .tag-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; position: relative; }
 /* 목록 뷰와 동일한 종이 겹침 쉐이딩 — 각 열 오른쪽 가장자리 (마지막 열 제외) */
 .tag-col:not(:last-child)::after {
