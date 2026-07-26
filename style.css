@@ -41,9 +41,108 @@
   --track-head: 0.03em;
   /* 표 좌우 페이지 여백 (제목 왼쪽=고정, 후원 오른쪽=스크롤 끝에 노출) */
   --table-pad: 32px;
+
+  /* ══ 목록 뷰 열 너비 ══ ← 열 폭은 여기서만 조절
+     한 줄이 열 하나. 숫자만 바꾸면 그 열의 폭이 바뀐다.
+     · 순서는 index.html 의 #col-headers 순서와 반드시 같아야 한다
+       (줄을 지우거나 추가하면 그쪽 헤더도 같이 고쳐야 함)
+     · 열 머리글과 값은 --cell-pad-x 만큼 안쪽에서 시작하므로,
+       글자 자리 = 아래 폭 - --cell-pad-x - 6px(오른쪽 여백)
+     · 전체 합이 화면(1366px)보다 넓으면 가로 스크롤이 생긴다 — 의도된 동작
+     · 1번(제목) 열은 가로 스크롤 중에도 왼쪽에 고정된다                      */
+  --grid-cols:
+    260px    /*  1 제목 — 좌측 고정 열 */
+     64px    /*  2 연도 */
+     85px    /*  3 판형 */
+     60px    /*  4 면수 */
+    137px    /*  5 분야 */
+    141px    /*  6 유형 */
+    200px    /*  7 종이 */
+    200px    /*  8 인쇄 및 후가공 */
+    220px    /*  9 제본 */
+     64px    /* 10 부수 */
+    200px    /* 11 저자·작가 */
+    180px    /* 12 기획자·편집자 */
+    170px    /* 13 사진가·일러스트레이터 */
+    170px    /* 14 디자이너 */
+    200px    /* 15 발행처 */
+    220px;   /* 16 후원 */
+
+  /* ══ 주요 정보값 — 목록 뷰·색인 뷰 공통 ══
+     제목·태그·연도·판형·면수·부수·색인 항목이 전부 이 한 값을 따라간다.
+     크기를 바꾸려면 여기만 고치면 됨.                                        */
+  --font-size-value: 14px;
+
+  /* ══ 셀 안 텍스트 들여쓰기 (목록 뷰) ══
+     · --cell-pad-x = 셀 좌우 안쪽 여백. 이 값이 곧 텍스트 들여쓰기가 되고,
+       열 머리글(제목/연도/…)도 같은 값을 써서 항상 세로로 정렬된다.
+       열 폭은 그대로이므로, 키우면 그만큼 글자 자리가 줄어든다.
+     · --cell-pad-y = 셀 위아래 여백 → 행 높이를 결정한다.
+       행 높이 = 글자크기 x 1.6(행간) + --cell-pad-y x 2 + 구분선 1px
+       예) 14 x 1.6 + 6.5 x 2 + 1 = 36.4px
+       시안 행 높이(33.7px)로 맞추려면 --cell-pad-y 를 5.15px 로.
+     · 첫 열(제목)의 왼쪽만은 페이지 여백이라 --table-pad(32px)를 따로 씀.     */
+  --cell-pad-x: 12px;
+  --cell-pad-y: 6.5px;
+
+  /* ══ 셀 텍스트 시각 보정 (아래로 내리는 양) ══
+     글자가 위로 붙어 보이는 건 착시가 아니라 폰트 메트릭 때문이다.
+     Apple SD Gothic Neo 는 베이스라인 위 10px / 아래 4px 를 잡아두는데,
+     한글은 실제로 아래로 1.12px 밖에 안 내려간다(ㅗ,ㅜ 같은 받침 제외).
+     그래서 남는 아래 여백만큼 글자 잉크 중심이 박스 중심보다 2.07px 위에 뜬다.
+     (태그의 점선 밑줄은 박스 높이엔 안 잡히지만 아래쪽 시각 무게를 더해
+      위로 붙은 느낌을 더 키운다)
+
+     아래 값만큼 위 패딩을 늘리고 아래 패딩을 줄여 글자를 내린다.
+     위·아래 패딩 합은 그대로라 행 높이는 변하지 않는다.
+       0     = 보정 없음(기하학적 중앙)
+       2px   = 측정된 잉크 중심을 박스 중앙에 맞춤  ← 권장
+       그 이상 = 눈으로 보면서 0.5px 단위로 조절                              */
+  --cell-optical-y: 2px;
+
+  /* ══ 가로 구분선의 왼쪽 여백 ══
+     행 구분선·머리글 구분선이 화면 왼쪽에서 이만큼 떨어져 시작한다.
+     제목 글자는 --table-pad(32px)에서 시작하므로, 그보다 작게 두면
+     글자보다 선이 먼저 나와 여유가 생긴다. (0 = 화면 끝까지 꽉 채움)
+     가로 스크롤을 해도 이 여백은 고정 제목 열에 묶여 있어 그대로 유지된다. */
+  --rule-inset: 16px;
+
+  /* ══ 머리글 띠(제목·연도·… 줄)의 세로 여백 ══
+     이 값을 키우면 흰 배경 띠가 위아래로 넓어진다. 스크롤되는 행이 띠 위쪽
+     틈으로 비쳐 보이면 이 값을 올리면 된다.
+     띠 높이 = 이 값 x 2 + 머리글 행간(22px) → 정수로 떨어지게 맞춰 둠
+     (소수 높이는 기기에 따라 1px 틈이 생길 수 있어 정수로 유지) */
+  --head-pad-y: 10px;
+
+  /* ══ 태그 동그란 점선 밑줄 ══
+     브라우저 기본 text-decoration:dotted 는 점 크기·간격을 지정할 수 없고
+     점 모양도 네모에 가깝다. 그래서 radial-gradient 로 정원(正圓)을 직접 그린다.
+     받침·디센더(ㅗ, g, y)에서 끊기는 skip-ink 문제도 없다.
+
+       --tag-dot-size    점 지름 (세로 굵기 = 이 값)
+       --tag-dot-period  점 중심 ~ 다음 점 중심 (빈칸 = period - size)
+       --tag-dot-bottom  태그 아래쪽에서 띄우는 거리 (키우면 글자에 붙음)
+
+     성기게 하려면 period 를 키우고, 촘촘하게 하려면 줄인다.
+     밑줄 길이는 글자 폭에 정확히 맞춰진다 (--tag-pad-x 만큼 안쪽에서 그림) */
+  --tag-dot-color: var(--text-muted);
+  --tag-dot-size: 2px;
+  --tag-dot-period: 5px;
+  --tag-dot-bottom: 1.5px;
+
+  /* ══ 태그 상자 (선택 시 회색 박스) ══
+     --tag-pad-x     좌우 여백 = 회색 박스가 글자 밖으로 나오는 정도
+     --tag-pad-y     위아래 기본 여백
+     --tag-optical-y 글자 잉크 중심이 상자 중심보다 위에 뜨는 양(측정값 2.07px).
+                     이만큼 위 여백을 늘리고 아래를 줄여 회색 박스가 글자를
+                     정확히 감싸게 한다. 0 으로 두면 예전처럼 위로 치우쳐 보인다.
+     상자 높이 = --tag-pad-y x 2 + 행간(18px) → 23px 로 기존과 동일하게 맞춰 둠 */
+  --tag-pad-x: 3px;
+  --tag-pad-y: 2.5px;
+  --tag-optical-y: 2.07px;
   /* 종이 겹침 그림자 — 각 칸 경계의 음영 (세기·폭 여기서 조절) */
-  --paper-shade: rgba(0, 0, 0, 0.05);
-  --paper-shade-w: 8px;
+  --paper-shade: rgba(0, 0, 0, 0.04);
+  --paper-shade-w: 10px;
 
   /* ══ 색인 뷰 리듬 — 행간·자간·간격은 전부 여기서 조절 ══
      아래 8개 값만 바꾸면 색인 페이지 전체 리듬이 한 번에 따라옵니다.
@@ -51,7 +150,8 @@
      · 아주 미세하게 조정     → --idx-item-pad 를 0.5px 단위로 (행 위아래에 각각 붙음)
      · 실제 행 높이 = 글자크기 x 행간 + 여백 x 2
        예) 13 x 1.55 + 2 x 2 = 24.15px  ← 현재 시안 기준값                     */
-  --idx-item-size: 13px;     /* 항목 글자 크기 */
+  --idx-item-size: var(--font-size-value);   /* 항목 글자 크기 — 목록 뷰와 통일 */
+  --idx-count-size: 11px;    /* 항목 옆 빈도 숫자 (보조 정보라 항목보다 작게) */
   --idx-item-lh: 1.55;       /* 항목 행간(배수) — 행 사이 간격의 주 조절값 */
   --idx-item-pad: 2px;       /* 항목 위아래 여백 — 행간 미세 조정용 */
   --idx-item-track: 0.02em;  /* 항목 자간 — 목록 뷰와 분리, 여기만 바꾸면 색인만 바뀜
@@ -189,22 +289,25 @@ body {
   grid-template-columns: var(--grid-cols);
   width: max-content;
   min-width: 100%;
-  padding: 8px var(--table-pad) 8px 0;   /* 오른쪽 페이지 여백(스크롤 끝에 노출) */
+  /* 세로 여백은 .col-header 가 가진다 — 머리글 칸이 띠 높이를 꽉 채워야
+     그 안에 그리는 구분선 여백 패치가 띠 바닥에 정확히 붙는다 */
+  padding: 0 var(--table-pad) 0 0;   /* 오른쪽 페이지 여백(스크롤 끝에 노출) */
   background: var(--bg);
   position: sticky;
   top: 0;
   z-index: 20;
 }
-/* 헤더↔첫 행 구분선 — 왼쪽 페이지 여백만큼 안쪽에서 시작 */
+/* 헤더↔첫 행 구분선의 '스크롤 구간' — z를 고정 제목 머리글(z 21)보다 낮춰
+   제목 열 아래에서는 가려지게 하고, 그 구간은 제목 머리글이 직접 그린다 */
 #col-headers::after {
   content: '';
   position: absolute;
-  left: var(--table-pad);
+  left: 0;
   right: 0;
   bottom: 0;
   height: 1px;
   background: var(--border-light);
-  z-index: 22;   /* 고정 제목 헤더(z 21) 위 → 제목 열 아래에도 선이 보이게 */
+  z-index: 20;
 }
 /* 제목 헤더(좌상단 코너) — 가로/세로 모두 고정 */
 #col-headers .col-header:first-child {
@@ -213,9 +316,26 @@ body {
   z-index: 21;
   background: var(--bg);
 }
+/* 머리글 구분선의 '고정 구간' — 제목 머리글 안에서 직접 그려 왼쪽 여백까지 고정 */
+#col-headers .col-header:first-child::before {
+  content: '';
+  position: absolute;
+  left: var(--rule-inset);
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--border-light);
+  z-index: 22;
+  pointer-events: none;
+}
 
 .col-header {
   position: relative;              /* 정렬 화살표(::after) 기준 */
+  /* 띠의 세로 여백을 머리글 칸이 직접 가진다 (칸이 띠 높이를 꽉 채우게).
+     위/아래를 --cell-optical-y 만큼 어긋나게 줘서 셀과 똑같은 시각 보정 적용 */
+  line-height: 23px;               /* 정수 → 띠 높이도 정수(틈 방지) */
+  padding-top:    calc(var(--head-pad-y) + var(--cell-optical-y));
+  padding-bottom: calc(var(--head-pad-y) - var(--cell-optical-y));
   font-size: 14px;                 /* 시안: 헤더 14pt */
   font-weight: 700;                /* 시안: Apple SD Gothic Neo Bold */
   color: var(--text);             /* 시안: 검정 */
@@ -223,8 +343,9 @@ body {
   cursor: pointer;
   user-select: none;
   transition: color 0.1s;
-  padding-right: 6px;
-  padding-left: 8px;
+  /* 좌우 모두 셀과 동일 → 머리글과 값이 늘 같은 지점에서 시작하고 같은 지점에서 잘림 */
+  padding-left:  var(--cell-pad-x);
+  padding-right: var(--cell-pad-x);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -256,17 +377,21 @@ body {
   transition: background 0.1s;
   position: relative;
 }
-/* 행 구분선 — 왼쪽 페이지 여백만큼 안쪽에서 시작 */
+/* 행 구분선의 '스크롤 구간' — 행과 함께 움직이는 부분.
+   z를 고정 제목 셀(z 6)보다 낮춰 제목 열 아래에서는 셀 배경에 가려지게 한다.
+   그 구간은 제목 셀이 ::before 로 직접 그리므로 선은 끊김 없이 이어진다.
+   (예전처럼 z를 6보다 높이면 이 선이 제목 열까지 덮어써서
+    고정 여백을 만들 방법이 없어진다 — 셀 안에서 z를 올려도 소용없음) */
 .book-row::after {
   content: '';
   position: absolute;
-  left: var(--table-pad);
+  left: 0;
   right: 0;
   bottom: 0;
   height: 1px;
   background: var(--border-light);
   pointer-events: none;
-  z-index: 7;   /* 고정 제목 셀(z 6) 위 → 제목 열 아래에도 선이 보이게 */
+  z-index: 5;
 }
 
 /* hover 음영은 마우스 기기에서만 (터치는 회색 잔상 없이 순백 유지) */
@@ -292,16 +417,34 @@ body {
   background: var(--bg);
   padding-left: var(--table-pad);   /* 왼쪽 페이지 여백(고정) */
 }
+/* 행 구분선의 '고정 구간' — 제목 열 안에서 직접 그린다.
+   제목 셀이 가로 스크롤에도 왼쪽에 고정되므로 이 선분과 왼쪽 여백도 함께 고정된다.
+   (제목 열 바깥 구간은 .book-row::after 가 이어서 그림) */
+.book-row-main .cell:first-child::before {
+  content: '';
+  position: absolute;
+  left: var(--rule-inset);
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--border-light);
+  z-index: 8;
+  pointer-events: none;
+}
 
 /* 모든 셀: 고정폭, 넘치면 숨김 → 호버 시 마퀴(흐르는 텍스트) */
 .cell {
   min-width: 0;
-  /* 세로 패딩을 셀로 옮겨 고정 제목 셀이 행 전체를 덮게.
-     세로 6.5px = 시안 행 높이 33.7px에 맞춤 (12.5px x 1.6 행간 + 6.5x2 + 구분선 1px) */
-  padding: 6.5px 8px;
+  /* 패딩을 셀이 가져야 고정 제목 셀이 행 전체를 덮는다. 값은 :root 에서 조절.
+     위/아래를 --cell-optical-y 만큼 어긋나게 줘서 글자를 시각 중앙으로 내린다
+     (합은 그대로라 행 높이는 안 변함) */
+  padding-top:    calc(var(--cell-pad-y) + var(--cell-optical-y));
+  padding-bottom: calc(var(--cell-pad-y) - var(--cell-optical-y));
+  padding-left:   var(--cell-pad-x);
+  padding-right:  var(--cell-pad-x);
   overflow: hidden;
   position: relative;
-  font-size: 12.5px;               /* 시안: 본문 12.5pt */
+  font-size: var(--font-size-value);
   font-weight: 500;                /* 시안: Apple SD Gothic Neo Medium */
   letter-spacing: var(--track-ko); /* 시안: 한글 자간 +0.02em */
   line-height: 1.6;
@@ -350,12 +493,12 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  max-width: 360px;
-  padding: 6px 9px;
+  gap: 3px;
+  max-width: 500px;
+  padding: 9px 9px;
   background: var(--surface);
   border: 1px solid var(--text);
-  border-radius: 4px;
+  border-radius: 0px;
   box-shadow: 0 3px 14px rgba(0,0,0,0.14);
   opacity: 0;
   transform: translateY(-50%) scale(0.96);
@@ -392,7 +535,7 @@ body {
 }
 .popover-layer .cell-popover.visible { transform: scale(1); }
 .cell-popover .popover-text {
-  font-size: 11px;
+  font-size: 14px;
   white-space: normal;
   word-break: break-word;
 }
@@ -405,23 +548,28 @@ body {
   /* 구분선 위아래 여백 맞추기: 위쪽엔 팝오버의 flex gap(4px)이 이미 붙으므로
      margin-top은 5-4=1px만 줘야 padding-top(5px)과 시각적으로 같아짐 */
   margin-top: 1px;
-  padding-top: 5px;
+  padding-top: 7px;
+  padding-left: 3px;
   border-top: 1px solid var(--border-light);
   font-family: var(--font-latin);
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.04em;      /* 8자리 코드가 뭉치지 않게 살짝 벌림 */
+  letter-spacing: 0.01em;      /* 8자리 코드가 뭉치지 않게 살짝 벌림 */
   color: var(--text);
   white-space: nowrap;
 }
 /* 펼침 대상 셀은 강조(밑줄)로 어떤 셀이 열렸는지 표시 */
 .cell.open { color: var(--text); }
 
+span .popover-callno  {
+  padding-bottom: 0;
+}
+
 /* 숫자·영문 열(연도·판형·면수·부수) — Univers, 13pt, 자간 0, 검정 */
 .cell-year, .cell-format, .cell-pages, .cell-copies {
   font-family: var(--font-latin);
   font-weight: 400;
-  font-size: 13px;
+  font-size: var(--font-size-value);
   letter-spacing: 0;
   color: var(--text);
 }
@@ -430,7 +578,7 @@ body {
 #col-headers .col-header[data-col="year"],
 #col-headers .col-header[data-col="format"],
 #col-headers .col-header[data-col="pages"] { text-align: left; }
-.cell-title { font-weight: 500; font-size: 12.5px; }
+.cell-title { font-weight: 500; font-size: var(--font-size-value); }
 .cell-empty { color: var(--text-light); }
 /* 소장 여부(스프레드시트 '소장' 열): 값 없으면 미소장 → 제목 옅은 회색 */
 .book-row.not-held .cell-title { color: var(--text-light); }
@@ -561,35 +709,55 @@ body {
 .cell-tag {
   display: inline-flex;
   align-items: center;
-  padding: 1px 3px;
-  font-size: 12.5px;
+  position: relative;                 /* 밑줄(::after) 기준 */
+  /* 위 여백을 --tag-optical-y 만큼 늘리고 아래를 줄여, 선택 시 회색 박스가
+     글자를 위아래 균등하게 감싸게 한다 (폰트가 아래쪽에 안 쓰는 여백을 잡아서
+     그냥 두면 글자가 박스 위쪽으로 치우쳐 보임) */
+  padding-top:    calc(var(--tag-pad-y) + var(--tag-optical-y));
+  padding-bottom: calc(var(--tag-pad-y) - var(--tag-optical-y));
+  padding-left:   var(--tag-pad-x);
+  padding-right:  var(--tag-pad-x);
+  font-size: var(--font-size-value);
   letter-spacing: var(--track-ko);
   cursor: pointer;
-  background: transparent;
   color: var(--text);
-  text-decoration: underline;
-  text-decoration-style: dotted;      /* 시안: 점선 밑줄 */
-  text-decoration-color: var(--text-muted);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
-  transition: background 0.12s, color 0.12s, text-decoration-color 0.12s;
+  text-decoration: none;
+  background-color: transparent;
+  transition: background-color 0.12s, color 0.12s;
   white-space: nowrap;
-  line-height: 1.5;
+  line-height: 18px;                  /* 상자 높이를 23px로 유지 (2.5x2 + 18) */
   vertical-align: middle;
   flex-shrink: 0;
 }
+/* 동그란 점선 밑줄 — 좌우를 --tag-pad-x 만큼 들여서 글자 폭에 정확히 맞춘다
+   (배경으로 깔면 패딩까지 덮어 단어보다 길어짐). 값은 :root 의 --tag-dot-* 에서 조절 */
+.cell-tag::after {
+  content: '';
+  position: absolute;
+  left: var(--tag-pad-x);
+  right: var(--tag-pad-x);
+  bottom: var(--tag-dot-bottom);
+  height: var(--tag-dot-size);
+  background-image: radial-gradient(circle,
+      var(--tag-dot-color) calc(var(--tag-dot-size) / 2),
+      transparent calc(var(--tag-dot-size) / 2));
+  background-size: var(--tag-dot-period) var(--tag-dot-size);
+  background-repeat: repeat-x;
+  background-position: left center;
+  pointer-events: none;
+}
 /* 태그 호버: 밑줄을 진하게 (마우스 기기에서만) */
 @media (hover: hover) and (pointer: fine) {
-  .cell-tag:hover { text-decoration-color: var(--text); }
+  .cell-tag:hover { --tag-dot-color: var(--text); }
 }
 
 /* 태그 선택됨 — 상단 칩과 같은 연회색 박스로 표시(밑줄 제거, 레이아웃 밀림 없음) */
 .cell-tag.tag-selected {
-  background: var(--hover);
+  background-color: var(--hover);
   color: var(--text);
-  text-decoration: none;
   border-radius: 2px;
 }
+.cell-tag.tag-selected::after { content: none; }   /* 선택 상태에선 점선 제거 */
 
 /* 태그바 "검색" 버튼 */
 .tag-search-btn {
@@ -705,7 +873,7 @@ body.view-index #tag-index {
 .tag-item-name { font-family: 'Univers LT Std', var(--font-body); word-break: break-word; }
 .tag-item-count {
   font-family: var(--font-latin);   /* 시안: Univers */
-  font-size: 11px;
+  font-size: var(--idx-count-size);
   letter-spacing: 0;
   color: var(--text-light);
   flex-shrink: 0;
