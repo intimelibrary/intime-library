@@ -60,13 +60,12 @@
     200px    /*  7 종이 */
     200px    /*  8 인쇄 및 후가공 */
     220px    /*  9 제본 */
-     64px    /* 10 부수 */
-    200px    /* 11 저자·작가 */
-    180px    /* 12 기획자·편집자 */
-    170px    /* 13 사진가·일러스트레이터 */
-    170px    /* 14 디자이너 */
-    200px    /* 15 발행처 */
-    220px;   /* 16 후원 */
+    200px    /* 10 저자·작가 */
+    180px    /* 11 기획자·편집자 */
+    170px    /* 12 사진가·일러스트레이터 */
+    170px    /* 13 디자이너 */
+    200px    /* 14 발행처 */
+    220px;   /* 15 후원 */
 
   /* ══ 주요 정보값 — 목록 뷰·색인 뷰 공통 ══
      제목·태그·연도·판형·면수·부수·색인 항목이 전부 이 한 값을 따라간다.
@@ -113,6 +112,15 @@
      띠 높이 = 이 값 x 2 + 머리글 행간(22px) → 정수로 떨어지게 맞춰 둠
      (소수 높이는 기기에 따라 1px 틈이 생길 수 있어 정수로 유지) */
   --head-pad-y: 10px;
+
+  /* ══ 정렬 화살표 (↑ ↓) ══
+     --sort-arrow-size   크기
+     --sort-arrow-drop   아래로 내리는 양 (0 = 세로 중앙, 음수면 위로)
+     --sort-arrow-right  머리글 오른쪽 끝에서 떨어진 거리
+     자리 확보용 여백은 아래 값들로 자동 계산되므로 따로 안 고쳐도 된다 */
+  --sort-arrow-size: 13px;
+  --sort-arrow-drop: 2px;
+  --sort-arrow-right: 4px;
 
   /* ══ 태그 동그란 점선 밑줄 ══
      브라우저 기본 text-decoration:dotted 는 점 크기·간격을 지정할 수 없고
@@ -174,9 +182,11 @@
 html { scroll-behavior: smooth; }
 
 html, body { overscroll-behavior: none; }
-/* touch-action: manipulation → 아이패드 더블탭 자동확대 방지 (스크롤·핀치줌은 유지) */
+/* pan-x pan-y → 스크롤(가로·세로)만 허용. 핀치 확대·더블탭 확대는 차단.
+   (manipulation 은 핀치 확대를 허용해서 두 손가락으로 화면이 커졌음)
+   Safari 는 이것만으로 페이지 확대를 다 막지 못해 JS 로도 한 번 더 막는다 */
 html, body, #table-scroll, #tag-index, .book-row, .cell, .cell-tag,
-.tag-item, .col-header, button, input { touch-action: manipulation; }
+.tag-item, .col-header, button, input { touch-action: pan-x pan-y; }
 body {
   font-family: var(--font-body);
   background: var(--bg);
@@ -365,15 +375,22 @@ body {
 #col-headers .col-header:first-child { padding-left: var(--table-pad); }  /* 왼쪽 페이지 여백(고정) */
 
 .col-header:hover { color: var(--text); }
-.col-header.sorted { color: var(--text); padding-right: 16px; }  /* 화살표 자리 확보 */
-/* 정렬 화살표: 오른쪽에 절대위치로 고정 → 좁은 열에서도 안 잘림 */
+/* 화살표 자리 확보 — 크기를 키우면 필요한 여백도 같이 늘어난다 */
+.col-header.sorted {
+  color: var(--text);
+  padding-right: calc(var(--sort-arrow-right) + var(--sort-arrow-size) + 2px);
+}
+/* 정렬 화살표: 오른쪽에 절대위치로 고정 → 좁은 열에서도 안 잘림.
+   top:50% + translateY(-50%) 가 세로 중앙에 붙들어 두므로,
+   내리려면 그 -50% 에 --sort-arrow-drop 을 더한다 (뺄셈이 아니라 덧셈) */
 .col-header.sorted::after {
   content: '↑';
   position: absolute;
-  right: 4px;
+  right: var(--sort-arrow-right);
   top: 50%;
-  transform: translateY(-50%);
-  font-size: 11px;
+  transform: translateY(calc(-50% + var(--sort-arrow-drop)));
+  font-size: var(--sort-arrow-size);
+  line-height: 1;          /* 글자 상자를 글리프에 딱 맞춤 → drop 값이 그대로 px 이동이 됨 */
   letter-spacing: 0;
 }
 .col-header.sorted.desc::after { content: '↓'; }
@@ -485,16 +502,9 @@ body {
   white-space: nowrap;
 }
 
-/* 넘치는 셀은 흐름(마퀴) 없이 그대로 잘린 채 표시 — 클릭 시 펼침(팝오버) */
-
-/* 흐르는 셀은 셀 전체가 "펼치기" 버튼 — 내부 태그는 클릭/호버 비활성 */
-.cell.marquee { cursor: pointer; }
+/* 넘치는 셀은 잘린 채 표시 — 클릭하면 팝오버로 펼침 (넘침 판정은 클릭 시점에 계산) */
 /* 청구기호 있는 책의 제목은 항상 클릭 가능(팝오버) */
 .book-row.has-callno .cell-title { cursor: pointer; }
-.cell.marquee .cell-tag {
-  pointer-events: none;
-  cursor: pointer;
-}
 
 /* 펼침 팝오버: 넘치는 셀 클릭 시 그 자리에서 내용 크기만큼 깔끔하게 펼침 */
 .cell-popover {
@@ -590,7 +600,14 @@ span .popover-callno  {
 #col-headers .col-header[data-col="format"],
 #col-headers .col-header[data-col="pages"] { text-align: left; }
 .cell-title { font-weight: 500; font-size: var(--font-size-value); }
-.cell-empty { color: var(--text-light); }
+/* 값 없음(—) — 어느 열에 있든 똑같이 보이도록 색·폰트·굵기를 직접 지정.
+   (안 그러면 연도·판형·면수·부수 열의 400/Univers 를 상속받아 태그 열과 달라짐) */
+.cell-empty {
+  color: var(--text-light);
+  font-family: var(--font-body);
+  font-weight: 500;
+  letter-spacing: var(--track-ko);
+}
 /* 소장 여부(스프레드시트 '소장' 열): 값 없으면 미소장 → 제목 옅은 회색 */
 .book-row.not-held .cell-title { color: var(--text-light); }
 
@@ -720,9 +737,11 @@ span .popover-callno  {
   display: inline-flex;
   align-items: center;
   position: relative;                 /* 밑줄(::after) 기준 */
-  /* 위 여백을 --tag-optical-y 만큼 늘리고 아래를 줄여, 선택 시 회색 박스가
-     글자를 위아래 균등하게 감싸게 한다 (폰트가 아래쪽에 안 쓰는 여백을 잡아서
-     그냥 두면 글자가 박스 위쪽으로 치우쳐 보임) */
+  /* 위 여백을 --tag-optical-y 만큼 늘려 회색 박스를 맞추면, 그만큼 글자도
+     같이 내려가 옆 열의 일반 텍스트보다 낮아진다. 상자째 그만큼 끌어올려
+     기준선을 되맞춘다 (relative 라 레이아웃·행 높이엔 영향 없음).
+     → 회색 박스는 글자 중앙, 글자는 다른 열과 같은 기준선 */
+  top: calc(-1 * var(--tag-optical-y));
   padding-top:    calc(var(--tag-pad-y) + var(--tag-optical-y));
   padding-bottom: calc(var(--tag-pad-y) - var(--tag-optical-y));
   padding-left:   var(--tag-pad-x);
@@ -765,7 +784,7 @@ span .popover-callno  {
 .cell-tag.tag-selected {
   background-color: var(--hover);
   color: var(--text);
-  border-radius: 2px;
+  border-radius: 0px;
 }
 .cell-tag.tag-selected::after { content: none; }   /* 선택 상태에선 점선 제거 */
 

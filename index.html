@@ -2,7 +2,9 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- maximum-scale·user-scalable: Safari 는 무시하지만 다른 브라우저에선 확대를 막아준다
+       (Safari 대응은 아래 gesture 이벤트 차단 + CSS touch-action 으로) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>인타임 도서관</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -59,7 +61,6 @@
     <span class="col-header" data-col="paper">종이</span>
     <span class="col-header" data-col="printing">인쇄 및 후가공</span>
     <span class="col-header" data-col="binding">제본</span>
-    <span class="col-header" data-col="copies">부수</span>
     <span class="col-header" data-col="author">저자·작가</span>
     <span class="col-header" data-col="editor">기획자·편집자</span>
     <span class="col-header" data-col="photographer">사진가·일러스트레이터</span>
@@ -81,6 +82,24 @@
 </div>
 
 <script>
+// ──────────────────────────────────────────────────────────
+// 확대 잠금 — 두 손가락 핀치 확대 / 더블탭 확대 차단
+// ──────────────────────────────────────────────────────────
+// iOS Safari 는 viewport 의 user-scalable=no 를 무시하고, CSS touch-action 만으로도
+// 페이지 확대가 완전히 막히지 않는다. WebKit 전용 gesture 이벤트를 직접 막아야 한다.
+// passive:false 여야 preventDefault 가 먹는다.
+['gesturestart', 'gesturechange', 'gestureend'].forEach(type => {
+  document.addEventListener(type, e => e.preventDefault(), { passive: false });
+});
+// 손가락 2개 이상이 움직이면 확대 제스처로 보고 차단 (gesture 이벤트가 없는 브라우저 대비).
+// 한 손가락 스크롤은 그대로 통과하므로 스크롤 성능에 영향 없음
+document.addEventListener('touchmove', e => {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+// 더블탭 확대는 CSS touch-action: pan-x pan-y 가 막는다.
+// touchend 에서 preventDefault 하는 방식은 쓰지 않는다 — 연속으로 빠르게 탭할 때
+// 두 번째 탭의 click 이 씹혀서 태그 필터·머리글 정렬이 안 눌린다.
+
 // ──────────────────────────────────────────────────────────
 // CONFIG — Google Sheets 설정
 // ──────────────────────────────────────────────────────────
@@ -125,12 +144,14 @@ const CONFIG = {
 let allBooks = [];
 let filtered = [];
 let renderedCount = 0;
-let sortCol = 'title';   // 시작 정렬: 제목
+// null = 정렬 안 함 → 원본 구글 시트 순서(= 청구기호 순) 그대로.
+// 이 상태에선 어떤 머리글에도 화살표가 뜨지 않는다.
+// 머리글을 누르면 그때부터 그 열 기준으로 정렬된다.
+let sortCol = null;
 let sortAsc = true;      // 오름차순(↑)
 let pendingTags = []; // 선택됐지만 아직 검색 안 된 태그 {field, val}[]
 let appliedTags = []; // 실제 필터에 적용된 태그 {field, val}[]
 let scrollObserver = null;
-let rowVisObserver = null;
 let scrollPauseBound = false;
 
 // ──────────────────────────────────────────────────────────
@@ -283,9 +304,11 @@ function showConnectionError() {
 function init() {
   bindEvents();
   bindTagIndexEvents();
-  // 초기 정렬 표시: 제목 오름차순(↑)
-  const initHeader = document.querySelector(`.col-header[data-col="${sortCol}"]`);
-  if (initHeader) { initHeader.classList.add('sorted'); if (!sortAsc) initHeader.classList.add('desc'); }
+  // 첫 화면은 원본 시트 순서(청구기호 순)라 정렬 중인 열이 없다 → 화살표도 없음
+  if (sortCol) {
+    const initHeader = document.querySelector(`.col-header[data-col="${sortCol}"]`);
+    if (initHeader) { initHeader.classList.add('sorted'); if (!sortAsc) initHeader.classList.add('desc'); }
+  }
   applyFilters();
   document.getElementById('state-overlay')?.remove();
 
@@ -296,7 +319,10 @@ function setupScrollObserver() {
   if (scrollObserver) scrollObserver.disconnect();
   scrollObserver = new IntersectionObserver(entries => {
     if (entries[0].isIntersecting) renderMore();
-  }, { root: document.getElementById('table-scroll'), rootMargin: '400px' });
+    // rootMargin 이 곧 '예열 거리' — 목록 끝이 화면에서 이만큼 떨어져 있을 때 미리 불러온다.
+    // 400px(≈11행)이면 아이패드 스크롤 속도에선 바닥에 닿은 뒤에야 로딩이 시작돼 눈에 띈다.
+    // 1600px(≈44행)이면 대략 두 화면 앞에서 채워지므로 로딩이 보이지 않는다
+  }, { root: document.getElementById('table-scroll'), rootMargin: '1600px' });
   scrollObserver.observe(document.getElementById('list-end'));
   bindScrollPause();
 }
@@ -304,22 +330,6 @@ function setupScrollObserver() {
 // 마퀴(흐르는 텍스트)는 마우스 기기(데스크톱)에서만 — 터치(iPad)는 스크롤 성능 위해 끔
 const FINE_POINTER = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
-// 행 가시성 옵저버 — 보이는 행만 측정·애니메이션(.in-view), 벗어나면 정지
-// 터치 기기도 실행: 오버플로우 셀에 .marquee 부여 → pointer-events:none → 태그 직접 클릭 차단
-function setupRowVisObserver() {
-  if (rowVisObserver) rowVisObserver.disconnect();
-  rowVisObserver = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      const row = e.target;
-      if (e.isIntersecting) {
-        if (row.dataset.mq !== '1') { measureRowMarquee(row); row.dataset.mq = '1'; }
-        row.classList.add('in-view');
-      } else {
-        row.classList.remove('in-view');
-      }
-    });
-  }, { root: document.getElementById('table-scroll'), rootMargin: '150px 0px' });
-}
 
 // 스크롤 중에는 마퀴 일시정지 → 스크롤 프레임 확보(매끄럽게). 제목 마퀴 때문에 터치도 필요
 function bindScrollPause() {
@@ -377,9 +387,16 @@ function bindEvents() {
 
     const cell = e.target.closest('.cell');
     if (!cell) return;
-    // 3) 넘침 여부를 클릭 시점에 측정
+    // 3) 넘침 여부를 클릭 시점에 측정 — 조금이라도 잘렸으면 펼침.
+    //    clientWidth 에는 좌우 패딩(제목 열은 32+12=44px)이 포함돼 있어서,
+    //    그대로 비교하면 44px 넘게 잘린 것만 잡힌다. 패딩을 뺀 '글자 자리'와 비교해야 함
     const inner = cell.firstElementChild;
-    const overflows = inner && (inner.scrollWidth - cell.clientWidth > 4);
+    let overflows = false;
+    if (inner) {
+      const cs = getComputedStyle(cell);
+      const avail = cell.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      overflows = inner.scrollWidth - avail > 1;   // 1px 은 소수점 반올림 여유
+    }
     if (overflows) { openCell(cell); return; }
     // 3-1) 제목 셀: 청구기호가 있으면 넘치지 않아도 팝오버(전체 제목+청구기호)
     if (cell.classList.contains('cell-title') &&
@@ -398,7 +415,6 @@ function bindEvents() {
       closeOpenCell();
     }
   });
-  // 마퀴는 행이 화면에 보일 때만 rowVisObserver가 측정·동작시킴
 }
 
 // 팝오버 x좌표 — 셀의 텍스트 시작 지점(왼쪽 패딩 포함)을 행 기준 좌표로 환산
@@ -526,6 +542,10 @@ function applyFilters() {
     return true;
   });
 
+  // 정렬 중인 열이 없으면(첫 화면) 원본 시트 순서를 그대로 둔다.
+  // filter 는 순서를 보존하므로 여기서 빠져나가면 청구기호 순이 유지됨
+  if (!sortCol) { renderInitial(); return; }
+
   // Sort — sortCol은 col-header의 data-col 값(= CONFIG.COL의 키)
   const sortKey = C[sortCol] || C.year;
   const numericCols = ['year', 'pages', 'copies'];
@@ -569,7 +589,6 @@ function renderInitial() {
   renderedCount = 0;
   const list = document.getElementById('book-list');
   list.innerHTML = '';
-  setupRowVisObserver();   // 이전 행 관찰 해제 + 새로 시작
 
   if (filtered.length === 0) {
     list.innerHTML = `<div id="state-overlay"><p>검색 결과가 없습니다.</p></div>`;
@@ -584,7 +603,6 @@ function renderMore() {
   const batch = filtered.slice(renderedCount, renderedCount + CONFIG.BATCH_SIZE);
   renderedCount += batch.length;
   const list = document.getElementById('book-list');
-  const newRows = [];
 
   batch.forEach(book => {
     const row = document.createElement('div');
@@ -598,9 +616,12 @@ function renderMore() {
     if (v('callNo')) row.classList.add('has-callno');
     const esc = (s) => (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+    // 값 없음 표시 — 태그 열·텍스트 열이 같은 모양(회색)을 쓰도록 한 군데로 통일
+    const EMPTY = '<span class="cell-empty">—</span>';
+
     // 일반 텍스트 셀 (클릭 불가)
     const txtCell = (cls, val) =>
-      `<span class="cell ${cls}"><span class="cell-inner">${esc(val) || '—'}</span></span>`;
+      `<span class="cell ${cls}"><span class="cell-inner">${esc(val) || EMPTY}</span></span>`;
 
     // 태그 셀 — ; 구분 다중값을 개별 태그로, 클릭 시 태그 검색
     // transform: 표시 텍스트만 가공 (data-val/필터는 원본 유지)
@@ -611,11 +632,12 @@ function renderMore() {
             const label = transform ? transform(p) : p;
             return `<span class="cell-tag" data-field="${field}" data-val="${esc(p)}">${esc(label)}</span>`;
           }).join('')
-        : '<span class="cell-empty">—</span>';
+        : EMPTY;
       return `<span class="cell ${cls}"><span class="cell-inner">${tags}</span></span>`;
     };
     // 순서(시안): 제목 연도 판형 면수 분야 유형 종이 인쇄·후가공 제본
-    //             부수 저자·작가 기획·편집 사진·일러스트 디자이너 발행처 후원
+    //             저자·작가 기획·편집 사진·일러스트 디자이너 발행처 후원
+    // (부수는 목록에서 뺐지만 데이터는 남아 있어 색인·태그 검색에선 그대로 쓰임)
     row.innerHTML = `
       <div class="book-row-main">
         ${txtCell('cell-title',                       v('title'))}
@@ -627,7 +649,6 @@ function renderMore() {
         ${tagCell('cell-paper',        'paper',       v('paper'))}
         ${tagCell('cell-printing',     'printing',    v('printing'))}
         ${tagCell('cell-binding',      'binding',     v('binding'))}
-        ${txtCell('cell-copies',                      v('copies'))}
         ${tagCell('cell-author',       'author',      v('author'))}
         ${tagCell('cell-editor',       'editor',      v('editor'))}
         ${tagCell('cell-photographer', 'photographer', v('photographer'))}
@@ -637,33 +658,13 @@ function renderMore() {
       </div>
     `;
 
-    newRows.push(row);
     list.appendChild(row);
   });
 
-  // 새 행을 가시성 옵저버에 등록 — 화면에 들어올 때만 측정·애니메이션
-  newRows.forEach(r => rowVisObserver && rowVisObserver.observe(r));
   // 새로 렌더된 행의 태그에 현재 pending 선택 상태 반영
   updateTagVisuals();
 }  // end renderMore
 
-// 한 행의 넘치는 셀을 측정해 마퀴 표시 (행이 처음 보일 때 1회만, 읽기→쓰기 분리)
-function measureRowMarquee(row) {
-  const cells = [...row.querySelectorAll('.cell')];
-  const overflowing = [];
-  cells.forEach(cell => {
-    const inner = cell.firstElementChild;
-    if (!inner) return;
-    const overflow = inner.scrollWidth - cell.clientWidth;
-    if (overflow > 4) overflowing.push([cell, overflow]);
-  });
-  overflowing.forEach(([cell, overflow]) => {
-    // 첫 글자~마지막 글자까지만 이동(여백 없음), 약 30px/s 균일 속도
-    cell.style.setProperty('--mq', `-${overflow}px`);
-    cell.style.setProperty('--mq-dur', `${Math.max(1.2, overflow / 30)}s`);
-    cell.classList.add('marquee');
-  });
-}
 
 // ──────────────────────────────────────────────────────────
 // TAG SYSTEM
@@ -848,9 +849,33 @@ function bucketCounts(colName, buckets) {
   }).filter(bk => bk.count > 0);
 }
 
-// 정렬은 시안대로 빈도순 고정 (동수면 가나다순). 정렬 토글 UI 없음
-function sortTagItems(items) {
-  return [...items].sort((a, b) => b.count - a.count || a.val.localeCompare(b.val, 'ko'));
+// 색인 항목 정렬 — 카테고리마다 규칙이 다르다 (정렬 토글 UI 없음)
+//   연도       : 최신순(내림차순)
+//   분야·유형  : 청구기호 분류 순서 고정 (아래 표)
+//   그 외      : 빈도순, 동수면 가나다순
+// 표에 없는 값은 표에 있는 값들 뒤에 빈도순으로 붙는다
+//   (유형의 '독립출판물'이 여기 해당 — 청구기호 A~J 분류에 없는 값)
+const INDEX_ORDER = {
+  field: ['미술', '사진', '공예', '디자인', '만화·일러스트레이션',
+          '공연·영화', '도시·건축', '문학', '인문·철학', '사회·문화'],   // 00~90
+  type:  ['도록', '작품집', '아티스트북', '진', '사진책',
+          '아카이브북', '자료집', '안내서·프로그램북', '단행본', '정기간행물'], // A~J
+};
+function sortTagItems(items, key) {
+  const arr = [...items];
+  const byCount = (a, b) => b.count - a.count || a.val.localeCompare(b.val, 'ko');
+
+  if (key === 'year') return arr.sort((a, b) => parseInt(b.val, 10) - parseInt(a.val, 10));
+
+  const order = INDEX_ORDER[key];
+  if (!order) return arr.sort(byCount);
+  return arr.sort((a, b) => {
+    const ai = order.indexOf(a.val), bi = order.indexOf(b.val);
+    if (ai !== -1 && bi !== -1) return ai - bi;   // 둘 다 표에 있으면 표 순서
+    if (ai !== -1) return -1;                     // 표에 있는 쪽이 먼저
+    if (bi !== -1) return 1;
+    return byCount(a, b);                         // 둘 다 표 밖이면 빈도순
+  });
 }
 
 // 열 개수 — 아이패드 12.9 전용 (가로 1366 / 세로 1024). 모바일 대응 없음
@@ -902,7 +927,7 @@ function renderCategoryBlock(cat) {
     // 'sub'(가상 필드): 컬럼값을 정규화/화이트리스트로 재분류 집계 / 그 외: 원본 컬럼 집계
     let items = cat.mode === 'sub' ? subTally(VFIELDS[cat.key]) : tallyField(CONFIG.COL[cat.key]);
     if (cat.transform) items = items.map(it => ({ ...it, disp: cat.transform(it.val) }));
-    items = sortTagItems(items);
+    items = sortTagItems(items, cat.key);
     if (cat.mode === 'all') {
       visible = items;                             // 전부 표시 (연도)
     } else {
