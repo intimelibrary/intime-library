@@ -140,6 +140,13 @@
   --tag-pad-x: 3px;
   --tag-pad-y: 2.5px;
   --tag-optical-y: 2.07px;
+
+  /* ══ 아이콘 선 굵기 (좌상단 책 · 검색 돋보기) ══
+     두 아이콘은 크기와 viewBox 가 서로 달라서, 같은 stroke-width 를 줘도
+     화면에 찍히는 굵기가 달라진다. vector-effect:non-scaling-stroke 를 걸어
+     이 값을 '실제 화면 px' 으로 해석하게 했다 → 한 값으로 둘이 똑같이 맞는다.
+     시안 1pt 기준. 더 가늘게: 0.9px / 더 굵게: 1.3px */
+  --icon-stroke: 1.1px;
   /* 종이 겹침 그림자 — 각 칸 경계의 음영 (세기·폭 여기서 조절) */
   --paper-shade: rgba(0, 0, 0, 0.04);
   --paper-shade-w: 10px;
@@ -160,7 +167,7 @@
   --idx-head-lh: 1.45;       /* 카테고리 제목 행간 */
   --idx-head-gap: 3px;       /* 카테고리 제목 ↔ 첫 항목 간격 (시안: 아주 좁음) */
   --idx-cat-gap: 21px;       /* 카테고리 블록끼리의 세로 간격 */
-  --idx-col-gap: 24px;       /* 열과 열 사이 가로 간격 = 그림자(세로선)와 다음 열 텍스트 사이 거리
+  --idx-col-gap: 17px;       /* 열과 열 사이 가로 간격 = 그림자(세로선)와 다음 열 텍스트 사이 거리
                                 (그림자는 각 열 오른쪽 끝에 붙으므로 이 값이 곧 그림자~다음 열 간격) */
 }
 
@@ -192,6 +199,10 @@ body {
   position: relative;   /* 좌상단 책 아이콘 기준 */
 }
 
+/* 아이콘 선 굵기 — 두 아이콘 모두 --icon-stroke 하나로 조절 */
+#brand-mark svg [stroke],
+#search-go svg [stroke] { stroke-width: var(--icon-stroke); }
+
 /* 시안: 좌상단 펼친 책 아이콘 */
 #brand-mark {
   position: absolute;
@@ -219,12 +230,11 @@ body {
 #search-bar {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 2px;
   width: 100%;
   max-width: 680px;                       /* 검색 라인 너비 축소 */
   min-height: 42px;
   margin: 40px auto 70px;                  /* 가운데 정렬 + 헤더와 간격 확대 */
-  padding: 5px 2px;
   border-bottom: 1px solid var(--text);   /* 시안: 검색 영역 밑줄 — 조금 볼드하게 */
   cursor: text;                           /* 빈 영역 클릭 → 입력 포커스 */
 }
@@ -232,8 +242,9 @@ body {
 #search-input {
   flex: 1 1 120px;
   min-width: 60px;
-  height: 30px;
-  padding: 0 2px;
+  height: 20px;
+  padding: 0 10px;
+  padding-bottom: 2px;
   border: none;
   background: transparent;
   font-family: var(--font-body);
@@ -684,7 +695,6 @@ span .popover-callno  {
   padding: 0 8px 0 11px;
   background: var(--hover);
   color: var(--text);
-  border-radius: 3px;
   font-size: 12.5px;
   letter-spacing: var(--track-ko);
   font-family: var(--font-body);
