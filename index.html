@@ -15,8 +15,8 @@
 
 <!-- ── HEADER ── -->
 <header id="header">
-  <!-- 시안: 좌상단 펼친 책 아이콘 — 클릭 시 새로고침(첫 화면으로) -->
-  <a id="brand-mark" href="./" aria-label="인타임 도서관 — 첫 화면으로" title="첫 화면으로">
+  <!-- 시안: 좌상단 펼친 책 아이콘 -->
+  <a id="brand-mark" href="#" aria-label="인타임 도서관" title="인타임 도서관">
     <!-- 선 굵기는 CSS 의 --icon-stroke 하나로 두 아이콘을 함께 조절 (non-scaling-stroke) -->
     <svg viewBox="0 0 36 31" width="34" height="29" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <!-- 왼쪽 면: 책등 위 → 왼쪽 위 모서리 → 왼쪽 아래 → 책등 아래 -->
@@ -585,10 +585,6 @@ function applyFilters() {
 // ──────────────────────────────────────────────────────────
 // RENDER (무한 스크롤)
 // ──────────────────────────────────────────────────────────
-// 시도했다가 되돌린 것: requestIdleCallback(timeout:200)으로 백그라운드
-// 채우기를 했었는데, timeout은 "한가하면"이 아니라 "이 시간이 지나면
-// 한가하지 않아도 강제 실행"이라, 배치 1회(≈214ms)짜리 무거운 작업이
-// 사용자가 스크롤하는 동안에도 계속 끼어들어 오히려 더 버벅였다.
 function renderInitial() {
   renderedCount = 0;
   const list = document.getElementById('book-list');

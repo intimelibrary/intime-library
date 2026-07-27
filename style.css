@@ -83,10 +83,6 @@
      · 첫 열(제목)의 왼쪽만은 페이지 여백이라 --table-pad(32px)를 따로 씀.     */
   --cell-pad-x: 12px;
   --cell-pad-y: 6.5px;
-  /* 아래 content-visibility 가 화면 밖 행의 높이를 짐작하는 데 쓰는 값.
-     실제 행 높이 공식(위 주석)과 똑같이 계산해 둬서, --cell-pad-y 나
-     --font-size-value 를 바꾸면 이 값도 저절로 따라간다 */
-  --row-height-hint: calc(var(--font-size-value) * 1.6 + var(--cell-pad-y) * 2 + 1px);
 
   /* ══ 셀 텍스트 시각 보정 (아래로 내리는 양) ══
      글자가 위로 붙어 보이는 건 착시가 아니라 폰트 메트릭 때문이다.
@@ -101,7 +97,7 @@
        0     = 보정 없음(기하학적 중앙)
        2px   = 측정된 잉크 중심을 박스 중앙에 맞춤  ← 권장
        그 이상 = 눈으로 보면서 0.5px 단위로 조절                              */
-  --cell-optical-y: 0px;   /* 기하학적 중앙 — 위아래 패딩 대칭 */
+  --cell-optical-y: 2px;
 
   /* ══ 가로 구분선의 왼쪽 여백 ══
      행 구분선·머리글 구분선이 화면 왼쪽에서 이만큼 떨어져 시작한다.
@@ -408,14 +404,6 @@ body {
   padding-right: var(--table-pad);   /* 오른쪽 페이지 여백(스크롤 끝에 노출) */
   transition: background 0.1s;
   position: relative;
-  /* 화면 밖 행은 레이아웃·페인트를 건너뛴다 — 배치 하나(80행)를 그릴 때
-     실제 화면에 보이는 2~3행만 계산하고 나머지 77행은 나중으로 미룸.
-     contain-intrinsic-size 는 건너뛴 동안 이 정도 높이인 척할 값
-     (없으면 스크롤바·전체 높이가 0으로 계산돼 스크롤이 덜컹거림).
-     'auto' 키워드는 한 번 실제로 그려지면 그 실측값을 기억해 재사용한다.
-     지원 안 하는 브라우저에서는 그냥 무시되고 기존과 동일하게 동작 */
-  content-visibility: auto;
-  contain-intrinsic-size: auto var(--row-height-hint);
 }
 /* 행 구분선의 '스크롤 구간' — 행과 함께 움직이는 부분.
    z를 고정 제목 셀(z 6)보다 낮춰 제목 열 아래에서는 셀 배경에 가려지게 한다.
@@ -611,21 +599,6 @@ span .popover-callno  {
 #col-headers .col-header[data-col="year"],
 #col-headers .col-header[data-col="format"],
 #col-headers .col-header[data-col="pages"] { text-align: left; }
-/* 태그 열(분야·유형·종이·…) 머리글: 값이 .cell-tag 박스라 --tag-pad-x 만큼
-   더 안쪽에서 시작하므로, 머리글도 같은 만큼 밀어서 기준선을 맞춘다 */
-#col-headers .col-header[data-col="field"],
-#col-headers .col-header[data-col="type"],
-#col-headers .col-header[data-col="paper"],
-#col-headers .col-header[data-col="printing"],
-#col-headers .col-header[data-col="binding"],
-#col-headers .col-header[data-col="author"],
-#col-headers .col-header[data-col="editor"],
-#col-headers .col-header[data-col="photographer"],
-#col-headers .col-header[data-col="designer"],
-#col-headers .col-header[data-col="publisher"],
-#col-headers .col-header[data-col="sponsor"] {
-  padding-left: calc(var(--cell-pad-x) + var(--tag-pad-x));
-}
 .cell-title { font-weight: 500; font-size: var(--font-size-value); }
 /* 값 없음(—) — 어느 열에 있든 똑같이 보이도록 색·폰트·굵기를 직접 지정.
    (안 그러면 연도·판형·면수·부수 열의 400/Univers 를 상속받아 태그 열과 달라짐) */
