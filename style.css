@@ -140,7 +140,7 @@
   --tag-dot-color: var(--text-muted);
   --tag-dot-size: 2px;
   --tag-dot-period: 5px;
-  --tag-dot-bottom: 1px;    /* 살짝 내림 (작을수록 아래로) */
+  --tag-dot-bottom: 1.5px;
 
   /* ══ 태그 상자 (선택 시 회색 박스) ══
      --tag-pad-x     좌우 여백 = 회색 박스가 글자 밖으로 나오는 정도
