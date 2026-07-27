@@ -611,6 +611,21 @@ span .popover-callno  {
 #col-headers .col-header[data-col="year"],
 #col-headers .col-header[data-col="format"],
 #col-headers .col-header[data-col="pages"] { text-align: left; }
+/* 태그 열(분야·유형·종이·…) 머리글: 값이 .cell-tag 박스라 --tag-pad-x 만큼
+   더 안쪽에서 시작하므로, 머리글도 같은 만큼 밀어서 기준선을 맞춘다 */
+#col-headers .col-header[data-col="field"],
+#col-headers .col-header[data-col="type"],
+#col-headers .col-header[data-col="paper"],
+#col-headers .col-header[data-col="printing"],
+#col-headers .col-header[data-col="binding"],
+#col-headers .col-header[data-col="author"],
+#col-headers .col-header[data-col="editor"],
+#col-headers .col-header[data-col="photographer"],
+#col-headers .col-header[data-col="designer"],
+#col-headers .col-header[data-col="publisher"],
+#col-headers .col-header[data-col="sponsor"] {
+  padding-left: calc(var(--cell-pad-x) + var(--tag-pad-x));
+}
 .cell-title { font-weight: 500; font-size: var(--font-size-value); }
 /* 값 없음(—) — 어느 열에 있든 똑같이 보이도록 색·폰트·굵기를 직접 지정.
    (안 그러면 연도·판형·면수·부수 열의 400/Univers 를 상속받아 태그 열과 달라짐) */
