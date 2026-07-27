@@ -583,17 +583,13 @@ function applyFilters() {
 }
 
 // ──────────────────────────────────────────────────────────
-// RENDER
+// RENDER (무한 스크롤)
 // ──────────────────────────────────────────────────────────
-// 첫 배치만 즉시 그려 화면을 빨리 띄우고, 나머지는 브라우저가 한가할 때
-// 뒤에서 미리 채워 둔다. 사용자가 내려가기 전에 이미 다 그려져 있으므로
-// 스크롤 도중 로딩이 보이지 않는다. (전체 2,446행 = 약 0.4초 분량의 작업이라
-// 한 번에 그리면 첫 화면이 그만큼 늦어져서, 나눠서 뒤로 미룬다)
-// 한 번 그린 행은 지우지 않는다 — 끝까지 내려갔다 올라와도 다시 그리지 않음.
-let renderGen = 0;   // 검색·정렬이 바뀌면 증가 → 이전 채우기 작업은 스스로 멈춤
-
+// 시도했다가 되돌린 것: requestIdleCallback(timeout:200)으로 백그라운드
+// 채우기를 했었는데, timeout은 "한가하면"이 아니라 "이 시간이 지나면
+// 한가하지 않아도 강제 실행"이라, 배치 1회(≈214ms)짜리 무거운 작업이
+// 사용자가 스크롤하는 동안에도 계속 끼어들어 오히려 더 버벅였다.
 function renderInitial() {
-  renderGen++;
   renderedCount = 0;
   const list = document.getElementById('book-list');
   list.innerHTML = '';
@@ -603,22 +599,6 @@ function renderInitial() {
     return;
   }
   renderMore();
-  scheduleFill(renderGen);
-}
-
-// 남은 행을 유휴 시간에 한 배치씩 채움
-function scheduleFill(gen) {
-  if (gen !== renderGen || renderedCount >= filtered.length) return;
-  // timeout 을 걸어야 페이지가 계속 바쁠 때도 유휴 콜백이 굶지 않는다.
-  // Safari 는 requestIdleCallback 지원이 늦어서 없을 수 있음 → setTimeout 으로 대체
-  const idle = window.requestIdleCallback
-    ? (cb => window.requestIdleCallback(cb, { timeout: 200 }))
-    : (cb => setTimeout(cb, 16));
-  idle(() => {
-    if (gen !== renderGen) return;   // 그 사이 검색·정렬이 바뀌었으면 중단
-    renderMore();
-    scheduleFill(gen);
-  });
 }
 
 function renderMore() {
