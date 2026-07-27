@@ -136,7 +136,7 @@
   --tag-dot-color: var(--text-muted);
   --tag-dot-size: 2px;
   --tag-dot-period: 5px;
-  --tag-dot-bottom: 1px;    /* 글자와 안 겹치게 살짝 아래로 (작을수록 아래) */
+  --tag-dot-bottom: 0px;    /* 글자와 안 겹치게 살짝 아래로 (작을수록 아래) */
 
   /* ══ 태그 상자 (선택 시 회색 박스) ══
      --tag-pad-x     좌우 여백 = 회색 박스가 글자 밖으로 나오는 정도
@@ -147,7 +147,7 @@
      상자 높이 = --tag-pad-y x 2 + 행간(18px) → 23px 로 기존과 동일하게 맞춰 둠 */
   --tag-pad-x: 3px;
   --tag-pad-y: 2.5px;
-  --tag-optical-y: 2.07px;
+  --tag-optical-y: 0px;    /* 기하학적 중앙 — 회색 박스 위아래 패딩 대칭 */
 
   /* ══ 아이콘 선 굵기 (좌상단 책 · 검색 돋보기) ══
      두 아이콘은 크기와 viewBox 가 서로 달라서, 같은 stroke-width 를 줘도
@@ -911,7 +911,8 @@ body.view-index #tag-index {
 .tag-more {
   padding: var(--idx-item-pad) 0;    /* '…더보기'도 항목과 같은 행 리듬 */
   cursor: pointer;
-  font-size: var(--idx-item-size);
+  font-size: 11px;
+font-weight: 600;
   line-height: var(--idx-item-lh);
   letter-spacing: var(--idx-item-track);
   color: var(--text-light);
