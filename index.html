@@ -827,7 +827,11 @@ function normalizeFinish(raw) {
   else if (b === '코팅') b = '라미네이팅';   // 색인: '코팅'을 '라미네이팅'에 합침
   return b;
 }
-const SUB_PRINT_METHOD = new Set(['오프셋 인쇄','UV 오프셋 인쇄','인디고 출력','별색 인쇄']);
+// 인쇄: 'UV 오프셋 인쇄'(항목 1건)을 '오프셋 인쇄'에 합침 — 색인엔 별도 항목으로 안 뜸
+function normalizePrintMethod(raw) {
+  return raw === 'UV 오프셋 인쇄' ? '오프셋 인쇄' : raw;
+}
+const SUB_PRINT_METHOD = new Set(['오프셋 인쇄','인디고 출력','별색 인쇄']);
 const SUB_FINISH = new Set(['박','라미네이팅','형압','실크스크린 인쇄','에폭시','UV 인쇄','바니시 코팅','CR 코팅','톰슨','UV 코팅','스티커 부착','북클로스','절취선','세양사','타공','귀돌림','배면 인쇄']);
 const SUB_BIND_METHOD = new Set(['무선 제본','사철 제본','중철 제본','PUR 제본','노출 사철 제본','중철 실 제본','스프링 제본','신문 접지','중철 오메가 제본','사철 PUR 제본','떡 제본','사철 무선 제본','아코디언 제본','노출 무선 제본','고무줄 제본','메모 제본','낱장 인쇄물','케이블타이 제본','접지','아코디언 접지']);
 const SUB_COVER = new Set(['각양장','둥근양장','오타바인딩','스위스 바인딩','하드커버','부착 표지','여러 책자를 결합','다양한 판형','프렌치 폴딩','테트베쉬 제본','삼중 싸바리','이중 싸바리','보드북']);
@@ -835,7 +839,7 @@ const SUB_ACCESSORY = new Set(['날개','자켓','헤드밴드','삽지','오리
 
 // 가상 필드 → 실제 컬럼(+정규화). 집계/필터 공용. "박" 클릭 시 표지에 박·자켓에 박… 합집합(정규화 매칭)
 const VFIELDS = {
-  printMethod: { col: 'printing', set: SUB_PRINT_METHOD },
+  printMethod: { col: 'printing', set: SUB_PRINT_METHOD, norm: normalizePrintMethod },
   finish:      { col: 'printing', set: SUB_FINISH, norm: normalizeFinish },
   bindMethod:  { col: 'binding',  set: SUB_BIND_METHOD },
   coverStyle:  { col: 'binding',  set: SUB_COVER },
