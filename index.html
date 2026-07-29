@@ -108,7 +108,7 @@ document.addEventListener('touchmove', e => {
 // 없으면 새로고침해 처음 상태로 되돌린다.
 // 비용은 setTimeout 하나뿐 — 이벤트가 올 때마다 그걸 지우고 다시 거는 것뿐이라
 // 목록이 몇 권이든, 스크롤이 얼마나 잦든 전혀 무겁지 않다.
-const IDLE_RELOAD_MIN = 3;                       // 조작 없으면 몇 분 뒤 새로고침
+const IDLE_RELOAD_MIN = 1;                       // 조작 없으면 몇 분 뒤 새로고침
 const IDLE_RELOAD_MS = IDLE_RELOAD_MIN * 60_000;
 let idleTimer = null;
 function resetIdleTimer() {
