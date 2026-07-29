@@ -466,7 +466,7 @@ function openCell(cell) {
     const pendingSet = new Set(pendingTags.map(t => t.field + '|' + t.val));
     tags.forEach(t => {
       const clone = t.cloneNode(true);
-      clone.classList.toggle('tag-selected', pendingSet.has(clone.dataset.field + '|' + clone.dataset.val));
+      clone.classList.toggle('tag-selected', isTagPending(pendingSet, clone.dataset.field, clone.dataset.val));
       pop.appendChild(clone);
     });
   } else {
@@ -739,11 +739,28 @@ function applyTagSearch() {
   document.getElementById('table-scroll').scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// 태그 하나(원본 컬럼의 field/val)가 현재 선택된 상태인지 판정.
+// 같은 field/val 직접 일치뿐 아니라, 색인의 그룹 태그(가상 필드: printMethod·
+// finish·bindMethod·coverStyle·accessory)로 선택된 경우 그 그룹에 속하는
+// 원본 값이면 함께 선택 표시한다. (예: 색인의 "박" 검색 → 목록의 "표지에 박"·
+// "자켓에 박"… 개별 태그도 회색 박스로 표시)
+// VFIELDS는 아래쪽에서 선언되지만, 이 함수는 실행 시점(클릭 등)에만 호출되고
+// 그때는 이미 전체 스크립트가 다 실행된 뒤라 문제없다.
+function isTagPending(pendingSet, field, val) {
+  if (pendingSet.has(field + '|' + val)) return true;
+  for (const [vfKey, vf] of Object.entries(VFIELDS)) {
+    if (vf.col !== field) continue;
+    const normVal = vf.norm ? vf.norm(val) : val;
+    if (pendingSet.has(vfKey + '|' + normVal)) return true;
+  }
+  return false;
+}
+
 // DOM 전체의 .cell-tag에 현재 pendingTags 선택 상태 반영
 function updateTagVisuals() {
   const pendingSet = new Set(pendingTags.map(t => t.field + '|' + t.val));
   document.querySelectorAll('.cell-tag').forEach(el => {
-    el.classList.toggle('tag-selected', pendingSet.has(el.dataset.field + '|' + el.dataset.val));
+    el.classList.toggle('tag-selected', isTagPending(pendingSet, el.dataset.field, el.dataset.val));
   });
 }
 
@@ -752,7 +769,9 @@ function renderTagBar() {
   const bar = document.getElementById('tag-bar');
   bar.innerHTML = '';
   pendingTags.forEach(({ field, val }) => {
-    const shownVal = val;   // 시안: 원본 표기 그대로 (PUR 제본 등)
+    // 시안: 원본 표기 그대로(PUR 제본 등) — 단, 인쇄·후가공 값은 목록 뷰와 같은
+    // 워딩 치환(코팅→라미네이팅, UV 오프셋 인쇄→오프셋 인쇄)을 칩에도 동일 적용
+    const shownVal = field === 'printing' ? displayPrinting(val) : val;
     const chip = document.createElement('span');
     chip.className = 'tag-chip';
     const lSpan = document.createElement('span'); lSpan.className = 'tag-chip-label'; lSpan.textContent = TAG_LABELS[field] || field;
