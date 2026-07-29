@@ -101,6 +101,28 @@ document.addEventListener('touchmove', e => {
 // 두 번째 탭의 click 이 씹혀서 태그 필터·머리글 정렬이 안 눌린다.
 
 // ──────────────────────────────────────────────────────────
+// 키오스크 자동 초기화 — 일정 시간 조작 없으면 새로고침(첫 화면으로)
+// ──────────────────────────────────────────────────────────
+// 전시장 키오스크 특성상, 관람객이 검색·필터를 걸어놓고 떠나면 다음 사람이
+// 그 상태를 그대로 이어받는다. 일정 시간 터치·클릭·스크롤·키보드 입력이
+// 없으면 새로고침해 처음 상태로 되돌린다.
+// 비용은 setTimeout 하나뿐 — 이벤트가 올 때마다 그걸 지우고 다시 거는 것뿐이라
+// 목록이 몇 권이든, 스크롤이 얼마나 잦든 전혀 무겁지 않다.
+const IDLE_RELOAD_MIN = 3;                       // 조작 없으면 몇 분 뒤 새로고침
+const IDLE_RELOAD_MS = IDLE_RELOAD_MIN * 60_000;
+let idleTimer = null;
+function resetIdleTimer() {
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => location.reload(), IDLE_RELOAD_MS);
+}
+// capture:true + window → 버블링 안 하는 scroll 이벤트도 어느 스크롤 영역에서
+// 일어나든 잡아낸다. passive:true 라 스크롤 성능엔 영향 없음
+['pointerdown', 'touchstart', 'keydown', 'scroll'].forEach(type => {
+  window.addEventListener(type, resetIdleTimer, { passive: true, capture: true });
+});
+resetIdleTimer();   // 페이지 로드 직후부터 타이머 시작
+
+// ──────────────────────────────────────────────────────────
 // CONFIG — Google Sheets 설정
 // ──────────────────────────────────────────────────────────
 const CONFIG = {
